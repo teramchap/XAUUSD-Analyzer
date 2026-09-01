@@ -1,0 +1,2 @@
+<resources><style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
+<item name="android:fontFamily">sans</item><item name="android:navigationBarColor">#FFFFFF</item></style></resources>
