@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+ android:layout_width="match_parent" android:layout_height="match_parent">
+ <LinearLayout android:orientation="vertical" android:padding="20dp"
+  android:layout_width="match_parent" android:layout_height="wrap_content">
+  <TextView android:text="XAUUSD Analyzer" android:textSize="28sp" android:textStyle="bold"
+   android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+  <TextView android:text="نسخه ۶ — تست واقعی فید" android:textSize="14sp"
+   android:layout_marginTop="4dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+  <TextView android:id="@+id/price" android:text="XAUUSD  --" android:textSize="32sp" android:textStyle="bold"
+   android:layout_marginTop="25dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+  <TextView android:id="@+id/updated" android:text="آخرین دریافت: --" android:textSize="12sp"
+   android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+  <TextView android:id="@+id/status" android:text="🟡 CONNECTING" android:textSize="24sp" android:textStyle="bold"
+   android:layout_marginTop="14dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+  <TextView android:id="@+id/analysis" android:text="..." android:textSize="16sp"
+   android:layout_marginTop="14dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+  <Button android:id="@+id/refresh" android:text="اتصال مجدد / بروزرسانی"
+   android:layout_marginTop="20dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+  <Button android:id="@+id/settings" android:text="درباره فید"
+   android:layout_marginTop="8dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+ </LinearLayout>
+</ScrollView>
