@@ -19,7 +19,7 @@
             android:layout_height="wrap_content"/>
 
         <TextView
-            android:text="نسخه ۶ — تست واقعی فید"
+            android:text="نسخه ۷ — تحلیل چندتایم‌فریمی"
             android:textSize="14sp"
             android:layout_marginTop="4dp"
             android:layout_width="wrap_content"
@@ -36,39 +36,32 @@
 
         <TextView
             android:id="@+id/updated"
-            android:text="آخرین دریافت: --"
+            android:text="آخرین تحلیل: --"
             android:textSize="12sp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
 
         <TextView
             android:id="@+id/status"
-            android:text="🟡 CONNECTING"
-            android:textSize="24sp"
+            android:text="🟡 ANALYZING"
+            android:textSize="26sp"
             android:textStyle="bold"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="16dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
 
         <TextView
             android:id="@+id/analysis"
-            android:text="..."
+            android:text="در حال دریافت اطلاعات..."
             android:textSize="16sp"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="16dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
         <Button
             android:id="@+id/refresh"
-            android:text="اتصال مجدد / بروزرسانی"
-            android:layout_marginTop="20dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
-
-        <Button
-            android:id="@+id/settings"
-            android:text="درباره فید"
-            android:layout_marginTop="8dp"
+            android:text="🔄 بروزرسانی و تحلیل"
+            android:layout_marginTop="24dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
