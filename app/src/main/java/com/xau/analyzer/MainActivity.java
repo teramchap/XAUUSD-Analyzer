@@ -518,15 +518,46 @@ public class MainActivity extends Activity {
                     return v;
                 }
 
-                long v = Long.parseLong(
-                        String.valueOf(value)
-                );
+                String textValue = String.valueOf(value).trim();
 
-                if (v < 100000000000L) {
-                    v *= 1000L;
+                // پشتیبانی از timestamp عددی
+                try {
+                    long v = Long.parseLong(textValue);
+
+                    // اگر timestamp ثانیه‌ای باشد
+                    if (v < 100000000000L) {
+                        v *= 1000L;
+                    }
+
+                    return v;
+
+                } catch (NumberFormatException ignored) {
+                    // اگر عدد نبود، ISO-8601 را امتحان می‌کنیم
                 }
 
-                return v;
+                // نمونه: 2026-09-02T13:00:00Z
+                try {
+                    SimpleDateFormat iso =
+                            new SimpleDateFormat(
+                                    "yyyy-MM-dd'T'HH:mm:ssX",
+                                    Locale.US
+                            );
+
+                    iso.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+                    Date date = iso.parse(textValue);
+
+                    if (date != null) {
+                        return date.getTime();
+                    }
+
+                } catch (Exception ignored) {
+                    // فرمت زمانی ناشناخته است
+                }
+
+                throw new Exception(
+                        "فرمت timestamp قابل شناسایی نیست: " + textValue
+                );
             }
         }
 
