@@ -8,7 +8,9 @@ import android.graphics.Color;
 import android.widget.TextView;
 import android.widget.Button;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Locale;
 
 import okhttp3.Call;
@@ -74,22 +76,25 @@ public class MainActivity extends Activity {
         double high;
         double low;
         double close;
+        boolean isOpen;
 
         Candle(
                 double open,
                 double high,
                 double low,
-                double close) {
+                double close,
+                boolean isOpen) {
 
             this.open = open;
             this.high = high;
             this.low = low;
             this.close = close;
+            this.isOpen = isOpen;
         }
     }
 
     // =========================================================
-    // دریافت قیمت
+    // دریافت قیمت زنده
     // =========================================================
 
     void loadAll() {
@@ -97,7 +102,7 @@ public class MainActivity extends Activity {
         setStatus(
                 "🟡 ANALYZING",
                 Color.rgb(170, 120, 0),
-                "در حال دریافت قیمت و کندل‌های بازار..."
+                "در حال دریافت قیمت و کندل‌های بسته‌شده..."
         );
 
         Request request =
@@ -163,9 +168,15 @@ public class MainActivity extends Activity {
                                             0
                                     );
 
+                            if (livePrice <= 0) {
+                                throw new Exception(
+                                        "قیمت معتبر دریافت نشد."
+                                );
+                            }
+
                             runOnUiThread(
-        MainActivity.this::loadCandles
-);
+                                    MainActivity.this::loadCandles
+                            );
 
                         } catch (Exception e) {
 
@@ -183,7 +194,7 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // دریافت سه تایم‌فریم
+    // دریافت تایم‌فریم‌ها
     // =========================================================
 
     void loadCandles() {
@@ -231,7 +242,7 @@ public class MainActivity extends Activity {
                 "https://biquote.io/api/XAUUSD/ohlc" +
                 "?interval=" +
                 interval +
-                "&limit=150";
+                "&limit=200";
 
         Request request =
                 new Request.Builder()
@@ -307,21 +318,36 @@ public class MainActivity extends Activity {
                                 JSONObject b =
                                         bars.getJSONObject(i);
 
+                                boolean open =
+                                        b.optBoolean(
+                                                "isOpen",
+                                                false
+                                        );
+
+                                /*
+                                 * کندل در حال تشکیل را
+                                 * وارد تحلیل نمی‌کنیم.
+                                 */
+                                if (open) {
+                                    continue;
+                                }
+
                                 candles.add(
                                         new Candle(
                                                 b.getDouble("open"),
                                                 b.getDouble("high"),
                                                 b.getDouble("low"),
-                                                b.getDouble("close")
+                                                b.getDouble("close"),
+                                                false
                                         )
                                 );
                             }
 
-                            if (candles.size() < 60) {
+                            if (candles.size() < 70) {
 
                                 throw new Exception(
                                         interval +
-                                        ": کندل کافی دریافت نشد"
+                                        ": کندل بسته‌شده کافی نیست"
                                 );
                             }
 
@@ -345,15 +371,15 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // موتور تحلیل نسخه 9
+    // موتور تحلیل نسخه 10
     // =========================================================
 
     void calculateAnalysis() {
 
         if (
-                m5.size() < 60 ||
-                m15.size() < 60 ||
-                h1.size() < 60
+                m5.size() < 70 ||
+                m15.size() < 70 ||
+                h1.size() < 70
         ) {
 
             setStatus(
@@ -386,7 +412,7 @@ public class MainActivity extends Activity {
         double atrM15 = atr(m15, 14);
 
         // -----------------------------------------------------
-        // جهت روند
+        // Trend
         // -----------------------------------------------------
 
         boolean h1Bull =
@@ -408,11 +434,11 @@ public class MainActivity extends Activity {
                 m5Ema20 < m5Ema50;
 
         // -----------------------------------------------------
-        // ساختار بازار M15
+        // ساختار واقعی M15
         // -----------------------------------------------------
 
         int structure =
-                marketStructure(m15);
+                swingStructure(m15);
 
         boolean structureBull =
                 structure > 0;
@@ -443,7 +469,7 @@ public class MainActivity extends Activity {
                 bearishBreakout(m5);
 
         // -----------------------------------------------------
-        // امتیازدهی
+        // امتیاز
         // -----------------------------------------------------
 
         int buyScore = 0;
@@ -456,186 +482,157 @@ public class MainActivity extends Activity {
                 new ArrayList<>();
 
         // =====================================================
-        // BUY
+        // BUY SCORE
         // =====================================================
 
         if (h1Bull) {
-
             buyScore += 25;
-
-            buyReasons.add(
-                    "H1 صعودی"
-            );
+            buyReasons.add("H1 صعودی");
         }
 
         if (m15Bull) {
-
             buyScore += 20;
-
-            buyReasons.add(
-                    "M15 صعودی"
-            );
+            buyReasons.add("M15 صعودی");
         }
 
         if (structureBull) {
-
             buyScore += 15;
-
-            buyReasons.add(
-                    "ساختار بازار صعودی"
-            );
+            buyReasons.add("ساختار M15 صعودی");
         }
 
         if (m5Bull) {
-
             buyScore += 10;
-
-            buyReasons.add(
-                    "M5 صعودی"
-            );
+            buyReasons.add("M5 صعودی");
         }
 
         if (bullSweep) {
-
             buyScore += 10;
-
-            buyReasons.add(
-                    "Liquidity Sweep صعودی"
-            );
+            buyReasons.add("Liquidity Sweep صعودی");
         }
 
         if (bullEngulf) {
-
             buyScore += 10;
-
-            buyReasons.add(
-                    "Bullish Engulfing"
-            );
+            buyReasons.add("Bullish Engulfing");
         }
 
         if (bullBreak) {
-
             buyScore += 10;
-
-            buyReasons.add(
-                    "Breakout صعودی"
-            );
+            buyReasons.add("Breakout صعودی");
         }
 
         // =====================================================
-        // SELL
+        // SELL SCORE
         // =====================================================
 
         if (h1Bear) {
-
             sellScore += 25;
-
-            sellReasons.add(
-                    "H1 نزولی"
-            );
+            sellReasons.add("H1 نزولی");
         }
 
         if (m15Bear) {
-
             sellScore += 20;
-
-            sellReasons.add(
-                    "M15 نزولی"
-            );
+            sellReasons.add("M15 نزولی");
         }
 
         if (structureBear) {
-
             sellScore += 15;
-
-            sellReasons.add(
-                    "ساختار بازار نزولی"
-            );
+            sellReasons.add("ساختار M15 نزولی");
         }
 
         if (m5Bear) {
-
             sellScore += 10;
-
-            sellReasons.add(
-                    "M5 نزولی"
-            );
+            sellReasons.add("M5 نزولی");
         }
 
         if (bearSweep) {
-
             sellScore += 10;
-
-            sellReasons.add(
-                    "Liquidity Sweep نزولی"
-            );
+            sellReasons.add("Liquidity Sweep نزولی");
         }
 
         if (bearEngulf) {
-
             sellScore += 10;
-
-            sellReasons.add(
-                    "Bearish Engulfing"
-            );
+            sellReasons.add("Bearish Engulfing");
         }
 
         if (bearBreak) {
-
             sellScore += 10;
-
-            sellReasons.add(
-                    "Breakout نزولی"
-            );
+            sellReasons.add("Breakout نزولی");
         }
 
         // =====================================================
-        // فیلتر جهت اصلی
+        // فیلتر ورود
         // =====================================================
 
         String signal = "WAIT";
 
-        int score =
-                Math.max(
-                        buyScore,
-                        sellScore
-                );
-
-        String filterMessage =
-                "";
+        String waitReason = "";
 
         /*
-         * اگر H1 و M15 خلاف هم باشند،
-         * ورود ممنوع است.
+         * BUY:
+         *
+         * H1 + M15 صعودی
+         * M5 صعودی
+         * حداقل یک تریگر واقعی
          */
+
+        boolean buyTrigger =
+                bullSweep ||
+                bullEngulf ||
+                bullBreak;
+
+        boolean sellTrigger =
+                bearSweep ||
+                bearEngulf ||
+                bearBreak;
 
         if (h1Bull && m15Bull) {
 
-            if (
-                    buyScore >= 60 &&
-                    buyScore > sellScore + 10
-            ) {
+            if (!m5Bull) {
+
+                waitReason =
+                        "M5 هنوز صعودی نشده است.";
+
+            } else if (!buyTrigger) {
+
+                waitReason =
+                        "تریگر ورود BUY در M5 تأیید نشده.";
+
+            } else if (buyScore >= 70) {
 
                 signal = "BUY";
+
+            } else {
+
+                waitReason =
+                        "قدرت BUY هنوز به حد تأیید نرسیده.";
             }
 
         } else if (h1Bear && m15Bear) {
 
-            if (
-                    sellScore >= 60 &&
-                    sellScore > buyScore + 10
-            ) {
+            if (!m5Bear) {
+
+                waitReason =
+                        "M5 هنوز نزولی نشده است.";
+
+            } else if (!sellTrigger) {
+
+                waitReason =
+                        "تریگر ورود SELL در M5 تأیید نشده.";
+
+            } else if (sellScore >= 70) {
 
                 signal = "SELL";
+
+            } else {
+
+                waitReason =
+                        "قدرت SELL هنوز به حد تأیید نرسیده.";
             }
 
         } else {
 
-            filterMessage =
-                    "⚠️ H1 و M15 هم‌جهت نیستند؛ " +
-                    "ورود فیلتر شد.";
-
-            signal = "WAIT";
+            waitReason =
+                    "H1 و M15 هم‌جهت نیستند.";
         }
 
         // =====================================================
@@ -661,16 +658,13 @@ public class MainActivity extends Activity {
                     entry - sl;
 
             tp1 =
-                    entry +
-                    risk;
+                    entry + risk;
 
             tp2 =
-                    entry +
-                    risk * 2;
+                    entry + (risk * 2);
 
             tp3 =
-                    entry +
-                    risk * 3;
+                    entry + (risk * 3);
 
         } else if (signal.equals("SELL")) {
 
@@ -682,20 +676,17 @@ public class MainActivity extends Activity {
                     sl - entry;
 
             tp1 =
-                    entry -
-                    risk;
+                    entry - risk;
 
             tp2 =
-                    entry -
-                    risk * 2;
+                    entry - (risk * 2);
 
             tp3 =
-                    entry -
-                    risk * 3;
+                    entry - (risk * 3);
         }
 
         // =====================================================
-        // نمایش قیمت
+        // نمایش
         // =====================================================
 
         price.setText(
@@ -708,17 +699,13 @@ public class MainActivity extends Activity {
 
         updated.setText(
                 "آخرین تحلیل: " +
-                new java.text.SimpleDateFormat(
+                new SimpleDateFormat(
                         "HH:mm:ss",
                         Locale.US
                 ).format(
-                        new java.util.Date()
+                        new Date()
                 )
         );
-
-        // =====================================================
-        // رنگ سیگنال
-        // =====================================================
 
         if (signal.equals("BUY")) {
 
@@ -751,6 +738,12 @@ public class MainActivity extends Activity {
 
         StringBuilder text =
                 new StringBuilder();
+
+        int score =
+                Math.max(
+                        buyScore,
+                        sellScore
+                );
 
         text.append(
                 String.format(
@@ -798,14 +791,14 @@ public class MainActivity extends Activity {
                 String.format(
                         Locale.US,
                         "ATR M5: %.2f\n" +
-                        "ATR M15: %.2f\n",
+                        "ATR M15: %.2f\n\n",
                         atrM5,
                         atrM15
                 )
         );
 
         text.append(
-                "\n━━━━━━━━━━━━━━━━\n"
+                "━━━━━━━━━━━━━━━━\n"
         );
 
         text.append(
@@ -824,7 +817,8 @@ public class MainActivity extends Activity {
                 " / 100\n\n"
         );
 
-        if (!signal.equals("WAIT")) {
+        if (signal.equals("BUY") ||
+                signal.equals("SELL")) {
 
             text.append(
                     String.format(
@@ -855,16 +849,18 @@ public class MainActivity extends Activity {
         } else {
 
             text.append(
-                    "⛔ فعلاً نقطه ورود تأیید نشده است.\n\n"
+                    "⛔ فعلاً نقطه ورود تأیید نشده.\n\n"
             );
 
-            if (!filterMessage.isEmpty()) {
+            text.append(
+                    "علت:\n"
+            );
 
-                text.append(
-                        filterMessage +
-                        "\n\n"
-                );
-            }
+            text.append(
+                    "• " +
+                    waitReason +
+                    "\n\n"
+            );
         }
 
         text.append(
@@ -925,11 +921,12 @@ public class MainActivity extends Activity {
 
         } else {
 
-            for (String r : buyReasons) {
+            for (String reason :
+                    buyReasons) {
 
                 text.append(
                         "• " +
-                        r +
+                        reason +
                         "\n"
                 );
             }
@@ -945,18 +942,32 @@ public class MainActivity extends Activity {
 
         } else {
 
-            for (String r : sellReasons) {
+            for (String reason :
+                    sellReasons) {
 
                 text.append(
                         "• " +
-                        r +
+                        reason +
                         "\n"
                 );
             }
         }
 
         text.append(
-                "\n⚠️ این خروجی ابزار تحلیل است و " +
+                "\n━━━━━━━━━━━━━━━━\n"
+        );
+
+        text.append(
+                "✓ فقط کندل‌های بسته‌شده " +
+                "در تحلیل استفاده شده‌اند.\n"
+        );
+
+        text.append(
+                "✓ کندل در حال تشکیل از محاسبات حذف شده.\n\n"
+        );
+
+        text.append(
+                "⚠️ این برنامه ابزار تحلیل است؛ " +
                 "سیگنال تضمینی معامله نیست."
         );
 
@@ -977,8 +988,7 @@ public class MainActivity extends Activity {
             return 0;
 
         double multiplier =
-                2.0 /
-                (period + 1);
+                2.0 / (period + 1);
 
         double value =
                 candles.get(
@@ -995,12 +1005,10 @@ public class MainActivity extends Activity {
             value =
                     (
                             (
-                                    candles.get(i).close
-                                    - value
-                            )
-                            * multiplier
-                    )
-                    + value;
+                                    candles.get(i).close -
+                                    value
+                            ) * multiplier
+                    ) + value;
         }
 
         return value;
@@ -1062,83 +1070,100 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // Market Structure
+    // Swing Structure
     // =========================================================
 
-    int marketStructure(
+    int swingStructure(
             ArrayList<Candle> candles) {
+
+        ArrayList<Double> highs =
+                new ArrayList<>();
+
+        ArrayList<Double> lows =
+                new ArrayList<>();
 
         int n =
                 candles.size();
 
-        if (n < 12)
+        /*
+         * Swing با دو کندل سمت چپ
+         * و دو کندل سمت راست.
+         */
+        for (
+                int i = 2;
+                i < n - 2;
+                i++
+        ) {
+
+            Candle c =
+                    candles.get(i);
+
+            boolean swingHigh =
+                    c.high >
+                    candles.get(i - 1).high &&
+                    c.high >
+                    candles.get(i - 2).high &&
+                    c.high >
+                    candles.get(i + 1).high &&
+                    c.high >
+                    candles.get(i + 2).high;
+
+            boolean swingLow =
+                    c.low <
+                    candles.get(i - 1).low &&
+                    c.low <
+                    candles.get(i - 2).low &&
+                    c.low <
+                    candles.get(i + 1).low &&
+                    c.low <
+                    candles.get(i + 2).low;
+
+            if (swingHigh)
+                highs.add(c.high);
+
+            if (swingLow)
+                lows.add(c.low);
+        }
+
+        if (
+                highs.size() < 2 ||
+                lows.size() < 2
+        )
             return 0;
 
-        double recentHigh =
-                Double.MIN_VALUE;
+        double lastHigh =
+                highs.get(
+                        highs.size() - 1
+                );
 
-        double recentLow =
-                Double.MAX_VALUE;
+        double previousHigh =
+                highs.get(
+                        highs.size() - 2
+                );
 
-        double oldHigh =
-                Double.MIN_VALUE;
+        double lastLow =
+                lows.get(
+                        lows.size() - 1
+                );
 
-        double oldLow =
-                Double.MAX_VALUE;
+        double previousLow =
+                lows.get(
+                        lows.size() - 2
+                );
 
-        for (
-                int i = n - 5;
-                i < n - 1;
-                i++
-        ) {
+        boolean bullish =
+                lastHigh > previousHigh &&
+                lastLow > previousLow;
 
-            recentHigh =
-                    Math.max(
-                            recentHigh,
-                            candles.get(i).high
-                    );
+        boolean bearish =
+                lastHigh < previousHigh &&
+                lastLow < previousLow;
 
-            recentLow =
-                    Math.min(
-                            recentLow,
-                            candles.get(i).low
-                    );
-        }
-
-        for (
-                int i = n - 10;
-                i < n - 5;
-                i++
-        ) {
-
-            oldHigh =
-                    Math.max(
-                            oldHigh,
-                            candles.get(i).high
-                    );
-
-            oldLow =
-                    Math.min(
-                            oldLow,
-                            candles.get(i).low
-                    );
-        }
-
-        if (
-                recentHigh > oldHigh &&
-                recentLow > oldLow
-        ) {
-
+        if (bullish)
             return 1;
-        }
 
-        if (
-                recentHigh < oldHigh &&
-                recentLow < oldLow
-        ) {
-
+        if (bearish)
             return -1;
-        }
 
         return 0;
     }
@@ -1345,10 +1370,11 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // Structure text
+    // Structure Text
     // =========================================================
 
-    String structureText(int structure) {
+    String structureText(
+            int structure) {
 
         if (structure > 0)
             return "BULLISH 🟢";
