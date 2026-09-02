@@ -3,65 +3,162 @@
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#F8F8F8"
+    android:fillViewport="true">
 
     <LinearLayout
         android:orientation="vertical"
-        android:padding="20dp"
+        android:padding="18dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
+        <!-- ================================================= -->
+        <!-- HEADER -->
+        <!-- ================================================= -->
+
         <TextView
-            android:text="XAUUSD Analyzer"
+            android:text="XAUUSD Analyzer 🎯"
             android:textSize="28sp"
             android:textStyle="bold"
-            android:layout_width="wrap_content"
+            android:textColor="#555555"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
         <TextView
-            android:text="نسخه ۷ — تحلیل چندتایم‌فریمی"
+            android:text="نسخه ۱۲ — Setup → Breakout → Pullback → Entry"
             android:textSize="14sp"
+            android:textColor="#777777"
             android:layout_marginTop="4dp"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
-        <TextView
-            android:id="@+id/price"
-            android:text="XAUUSD  --"
-            android:textSize="32sp"
-            android:textStyle="bold"
-            android:layout_marginTop="25dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
 
-        <TextView
-            android:id="@+id/updated"
-            android:text="آخرین تحلیل: --"
-            android:textSize="12sp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+        <!-- ================================================= -->
+        <!-- DIGITAL PRICE PANEL -->
+        <!-- ================================================= -->
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:gravity="center_vertical"
+            android:padding="16dp"
+            android:layout_marginTop="18dp"
+            android:background="#050805"
+            android:elevation="6dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:text="XAUUSD"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#B6FF00"
+                    android:fontFamily="monospace"
+                    android:letterSpacing="0.08"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:text="LIVE"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="#B6FF00"
+                    android:fontFamily="monospace"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/price"
+                android:text="XAUUSD  --"
+                android:textSize="42sp"
+                android:textStyle="bold"
+                android:textColor="#B6FF00"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.04"
+                android:gravity="center"
+                android:shadowColor="#70B6FF00"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="8"
+                android:layout_marginTop="4dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:id="@+id/updated"
+                android:text="آخرین تحلیل: --"
+                android:textSize="12sp"
+                android:textColor="#B6FF00"
+                android:fontFamily="monospace"
+                android:gravity="center"
+                android:layout_marginTop="4dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+        </LinearLayout>
+
+
+        <!-- ================================================= -->
+        <!-- STATUS -->
+        <!-- ================================================= -->
 
         <TextView
             android:id="@+id/status"
             android:text="🟡 ANALYZING"
-            android:textSize="26sp"
+            android:textSize="27sp"
             android:textStyle="bold"
-            android:layout_marginTop="16dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
-
-        <TextView
-            android:id="@+id/analysis"
-            android:text="در حال دریافت اطلاعات..."
-            android:textSize="16sp"
-            android:layout_marginTop="16dp"
+            android:textColor="#AA7800"
+            android:layout_marginTop="22dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
+
+        <!-- ================================================= -->
+        <!-- ANALYSIS CARD -->
+        <!-- ================================================= -->
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:padding="14dp"
+            android:layout_marginTop="10dp"
+            android:background="#FFFFFF"
+            android:elevation="2dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/analysis"
+                android:text="در حال دریافت اطلاعات..."
+                android:textSize="16sp"
+                android:textColor="#666666"
+                android:lineSpacingExtra="5dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+        </LinearLayout>
+
+
+        <!-- ================================================= -->
+        <!-- REFRESH -->
+        <!-- ================================================= -->
+
         <Button
             android:id="@+id/refresh"
-            android:text="🔄 بروزرسانی و تحلیل"
-            android:layout_marginTop="24dp"
+            android:text="🔄  بروزرسانی و تحلیل"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="12dp"
+            android:minHeight="52dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
