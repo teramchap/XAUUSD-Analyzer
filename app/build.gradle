@@ -13,6 +13,21 @@ android {
         versionCode 6
         versionName "6.0"
     }
+
+    signingConfigs {
+        debug {
+            storeFile file("${rootProject.projectDir}/xau-debug.keystore")
+            storePassword "xauanalyzer2026"
+            keyAlias "xauanalyzerkey"
+            keyPassword "xauanalyzer2026"
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
+    }
 }
 
 dependencies {
