@@ -688,6 +688,15 @@ public class MainActivity extends Activity {
         }
 
         // ---------------------------------------------
+        // BREAKOUT INVALIDATION
+        // ---------------------------------------------
+        // اگر Break فعال قدیمی شده یا قیمت به‌وضوح در خلاف جهت آن
+        // حرکت کرده، آن را باطل می‌کنیم تا Pullback بی‌اعتبار و
+        // دیرهنگام باعث سیگنال کاذب نشود.
+
+        invalidateStaleBreak(atrM5);
+
+        // ---------------------------------------------
         // PULLBACK
         // ---------------------------------------------
 
@@ -1585,7 +1594,7 @@ public class MainActivity extends Activity {
                 );
 
         int end =
-                candles.size() - 2;
+                candles.size() - 3;
 
         for (int i = start; i <= end; i++) {
 
@@ -1828,6 +1837,57 @@ public class MainActivity extends Activity {
             this.direction = direction;
             this.level = level;
             this.time = time;
+        }
+    }
+
+    // =========================================================
+    // BREAKOUT INVALIDATION
+    // =========================================================
+    // یک Break فعال در دو حالت باطل می‌شود:
+    // 1) اگر بیش از حد قدیمی شده و Pullback رخ نداده (Expiry)
+    // 2) اگر قیمت به‌وضوح در خلاف جهت Break حرکت کرده (Fake Breakout)
+
+    private static final long BREAK_MAX_AGE_MS =
+            60L * 60L * 1000L; // 1 ساعت
+
+    private static final double BREAK_INVALIDATION_ATR_MULT = 1.0;
+
+    private void invalidateStaleBreak(double atrM5) {
+
+        if (activeBreakDirection == DIR_NONE
+                || activeBreakTime <= 0
+                || m5.isEmpty()) {
+            return;
+        }
+
+        long now =
+                m5.get(m5.size() - 1).openTime;
+
+        boolean expired =
+                (now - activeBreakTime) > BREAK_MAX_AGE_MS;
+
+        boolean invalidatedByPrice = false;
+
+        if (activeBreakDirection == DIR_BUY) {
+
+            invalidatedByPrice =
+                    livePrice <
+                            activeBreakLevel
+                                    - atrM5 * BREAK_INVALIDATION_ATR_MULT;
+
+        } else if (activeBreakDirection == DIR_SELL) {
+
+            invalidatedByPrice =
+                    livePrice >
+                            activeBreakLevel
+                                    + atrM5 * BREAK_INVALIDATION_ATR_MULT;
+        }
+
+        if (expired || invalidatedByPrice) {
+
+            activeBreakDirection = DIR_NONE;
+            activeBreakLevel = 0;
+            activeBreakTime = 0;
         }
     }
 
