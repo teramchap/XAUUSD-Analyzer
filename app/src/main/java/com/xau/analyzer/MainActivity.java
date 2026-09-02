@@ -164,8 +164,8 @@ public class MainActivity extends Activity {
                                     );
 
                             runOnUiThread(
-                                    this::loadCandles
-                            );
+        MainActivity.this::loadCandles
+);
 
                         } catch (Exception e) {
 
