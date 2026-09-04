@@ -840,7 +840,8 @@ public class MainActivity extends Activity {
                     activeBreakLevel,
                     confirmationTime,
                     pullbackTime,
-                    buyEntryConfirmed
+                    buyEntryConfirmed,
+                    atrM5
             );
         } else if (sellForming && !buyForming) {
             showSellForming(
@@ -855,7 +856,8 @@ public class MainActivity extends Activity {
                     activeBreakLevel,
                     confirmationTime,
                     pullbackTime,
-                    sellEntryConfirmed
+                    sellEntryConfirmed,
+                    atrM5
             );
         } else if (buyForming && sellForming) {
             showMixedMarket(buyScore, sellScore);
@@ -864,7 +866,8 @@ public class MainActivity extends Activity {
                     activeBreakLevel,
                     confirmationTime,
                     pullbackTime,
-                    false
+                    false,
+                    atrM5
             );
         } else {
             showNoSetup();
@@ -873,7 +876,8 @@ public class MainActivity extends Activity {
                     0,
                     0,
                     0,
-                    false
+                    false,
+                    atrM5
             );
         }
 
@@ -1250,7 +1254,8 @@ public class MainActivity extends Activity {
             double breakLevel,
             long confirmationTime,
             long pullbackTime,
-            boolean entryConfirmed) {
+            boolean entryConfirmed,
+            double atrM5) {
 
         if (tradePlan == null || tradePlanNote == null) return;
 
