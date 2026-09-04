@@ -243,11 +243,7 @@ public class MainActivity extends Activity {
 
                     updatePrice();
 
-                    try {
-                        calculateAnalysis();
-                    } catch (Exception analysisError) {
-                        showAnalysisError(analysisError);
-                    }
+                    calculateAnalysis();
                 });
 
             } catch (Exception e) {
@@ -282,33 +278,6 @@ public class MainActivity extends Activity {
             }
 
         }).start();
-    }
-
-    // =========================================================
-    // ANALYSIS ERROR
-    // =========================================================
-
-    private void showAnalysisError(Exception e) {
-
-        status.setText("⚠️ ANALYSIS ERROR");
-        status.setTextColor(Color.rgb(180, 70, 70));
-
-        if (statusDot != null) {
-            statusDot.setText("!");
-            statusDot.setTextColor(Color.WHITE);
-            statusDot.setBackgroundColor(Color.rgb(190, 70, 70));
-        }
-
-        setupState.setText("خطا در تحلیل داده‌های بازار");
-
-        String message = e.getMessage();
-        if (message == null || message.trim().isEmpty()) {
-            message = e.getClass().getSimpleName();
-        }
-        setupReason.setText(message);
-        setupWaiting.setText(
-                "برنامه بسته نمی‌شود؛ داده بعدی در به‌روزرسانی بعدی دوباره تحلیل خواهد شد."
-        );
     }
 
     // =========================================================
@@ -1069,103 +1038,91 @@ public class MainActivity extends Activity {
             int score,
             double atrM5) {
 
-        status.setText("BUY READY");
-        status.setTextColor(Color.rgb(20, 145, 80));
+        status.setText(
+                "BUY READY"
+        );
+
+        status.setTextColor(
+                Color.rgb(20, 145, 80)
+        );
 
         if (statusDot != null) {
+
             statusDot.setText("●");
-            statusDot.setTextColor(Color.rgb(220, 255, 230));
-            statusDot.setBackgroundColor(Color.rgb(40, 190, 105));
+            statusDot.setTextColor(
+                    Color.rgb(220, 255, 230)
+            );
+
+            statusDot.setBackgroundColor(
+                    Color.rgb(40, 190, 105)
+            );
         }
 
         setupState.setText(
                 "🟢 BUY READY — شرایط ورود تأیید شده است."
         );
 
-        double entry = m5.get(m5.size() - 1).close;
-        double pullbackLow = recentLow(m5, 5, 0);
-        double slByPullback = pullbackLow - Math.max(atrM5 * 0.20, 0.30);
-        double slByAtr = entry - atrM5 * 1.50;
-        double sl = Math.min(slByPullback, slByAtr);
-        double risk = entry - sl;
-
-        if (risk <= 0) {
-            risk = Math.max(atrM5, 0.30);
-            sl = entry - risk;
-        }
-
-        double tp1 = entry + risk;
-        double tp2 = entry + risk * 2.0;
-        double tp3 = entry + risk * 3.0;
-
         setupReason.setText(
                 "شکست ساختار M15 ✓\n" +
                         "تأیید M5 ✓\n" +
                         "Pullback ✓\n" +
-                        "تأیید ورود ✓\n\n" +
-                        "ENTRY: " + fmt(entry) + "\n" +
-                        "STOP LOSS: " + fmt(sl) + "\n" +
-                        "TP1: " + fmt(tp1) + "\n" +
-                        "TP2: " + fmt(tp2) + "\n" +
-                        "TP3: " + fmt(tp3)
+                        "تأیید ورود ✓"
         );
 
         setupWaiting.setText(
-                "BUY READY | Quality: " + score + "/100\n" +
-                        "ورود بر اساس آخرین کندل بسته M5 بعد از Pullback محاسبه شده است."
+                "Entry فقط بعد از تکمیل زنجیره " +
+                        "Breakout → Confirmation → Pullback صادر شده است."
         );
     }
+
+    // =========================================================
+    // SELL READY
+    // =========================================================
 
     private void showSellReady(
             int score,
             double atrM5) {
 
-        status.setText("SELL READY");
-        status.setTextColor(Color.rgb(190, 55, 55));
+        status.setText(
+                "SELL READY"
+        );
+
+        status.setTextColor(
+                Color.rgb(190, 55, 55)
+        );
 
         if (statusDot != null) {
+
             statusDot.setText("●");
-            statusDot.setTextColor(Color.rgb(255, 225, 225));
-            statusDot.setBackgroundColor(Color.rgb(215, 65, 65));
+            statusDot.setTextColor(
+                    Color.rgb(255, 225, 225)
+            );
+
+            statusDot.setBackgroundColor(
+                    Color.rgb(215, 65, 65)
+            );
         }
 
         setupState.setText(
                 "🔴 SELL READY — شرایط ورود تأیید شده است."
         );
 
-        double entry = m5.get(m5.size() - 1).close;
-        double pullbackHigh = recentHigh(m5, 5, 0);
-        double slByPullback = pullbackHigh + Math.max(atrM5 * 0.20, 0.30);
-        double slByAtr = entry + atrM5 * 1.50;
-        double sl = Math.max(slByPullback, slByAtr);
-        double risk = sl - entry;
-
-        if (risk <= 0) {
-            risk = Math.max(atrM5, 0.30);
-            sl = entry + risk;
-        }
-
-        double tp1 = entry - risk;
-        double tp2 = entry - risk * 2.0;
-        double tp3 = entry - risk * 3.0;
-
         setupReason.setText(
                 "شکست ساختار M15 ✓\n" +
                         "تأیید M5 ✓\n" +
                         "Pullback ✓\n" +
-                        "تأیید ورود ✓\n\n" +
-                        "ENTRY: " + fmt(entry) + "\n" +
-                        "STOP LOSS: " + fmt(sl) + "\n" +
-                        "TP1: " + fmt(tp1) + "\n" +
-                        "TP2: " + fmt(tp2) + "\n" +
-                        "TP3: " + fmt(tp3)
+                        "تأیید ورود ✓"
         );
 
         setupWaiting.setText(
-                "SELL READY | Quality: " + score + "/100\n" +
-                        "ورود بر اساس آخرین کندل بسته M5 بعد از Pullback محاسبه شده است."
+                "Entry فقط بعد از تکمیل زنجیره " +
+                        "Breakout → Confirmation → Pullback صادر شده است."
         );
     }
+
+    // =========================================================
+    // MIXED
+    // =========================================================
 
     private void showMixedMarket(
             int buyScore,
@@ -1562,91 +1519,95 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // SWING STRUCTURE — V13
+    // SWING STRUCTURE
     // =========================================================
-
-    private static class SwingPoint {
-        int index;
-        double price;
-        boolean high;
-
-        SwingPoint(int index, double price, boolean high) {
-            this.index = index;
-            this.price = price;
-            this.high = high;
-        }
-    }
-
-    private ArrayList<SwingPoint> confirmedSwings(
-            ArrayList<Candle> candles) {
-
-        ArrayList<SwingPoint> swings = new ArrayList<>();
-
-        // 2-left / 2-right confirmation prevents the newest
-        // unfinished candle structure from being treated as a swing.
-        int start = Math.max(2, candles.size() - 80);
-        int end = candles.size() - 3; // last 2 candles must exist after pivot
-
-        for (int i = start; i <= end; i++) {
-            Candle c = candles.get(i);
-
-            boolean isHigh =
-                    c.high > candles.get(i - 1).high &&
-                    c.high >= candles.get(i - 2).high &&
-                    c.high > candles.get(i + 1).high &&
-                    c.high >= candles.get(i + 2).high;
-
-            boolean isLow =
-                    c.low < candles.get(i - 1).low &&
-                    c.low <= candles.get(i - 2).low &&
-                    c.low < candles.get(i + 1).low &&
-                    c.low <= candles.get(i + 2).low;
-
-            if (isHigh) {
-                swings.add(new SwingPoint(i, c.high, true));
-            }
-
-            if (isLow) {
-                swings.add(new SwingPoint(i, c.low, false));
-            }
-        }
-
-        swings.sort((a, b) -> Integer.compare(a.index, b.index));
-        return swings;
-    }
 
     private int swingStructure(
             ArrayList<Candle> candles) {
 
-        ArrayList<SwingPoint> swings = confirmedSwings(candles);
-
-        ArrayList<SwingPoint> highs = new ArrayList<>();
-        ArrayList<SwingPoint> lows = new ArrayList<>();
-
-        for (SwingPoint s : swings) {
-            if (s.high) highs.add(s);
-            else lows.add(s);
-        }
-
-        if (highs.size() < 2 || lows.size() < 2) {
+        if (candles.size() < 15) {
             return DIR_NONE;
         }
 
-        SwingPoint lastHigh = highs.get(highs.size() - 1);
-        SwingPoint prevHigh = highs.get(highs.size() - 2);
-        SwingPoint lastLow = lows.get(lows.size() - 1);
-        SwingPoint prevLow = lows.get(lows.size() - 2);
+        List<Double> highs =
+                new ArrayList<>();
+
+        List<Double> lows =
+                new ArrayList<>();
+
+        int start =
+                Math.max(
+                        2,
+                        candles.size() - 50
+                );
+
+        int end =
+                candles.size() - 2;
+
+        for (int i = start; i <= end; i++) {
+
+            Candle c =
+                    candles.get(i);
+
+            if (c.high >
+                    candles.get(i - 1).high &&
+                    c.high >
+                    candles.get(i - 2).high &&
+                    c.high >
+                    candles.get(i + 1).high &&
+                    c.high >
+                    candles.get(i + 2).high) {
+
+                highs.add(c.high);
+            }
+
+            if (c.low <
+                    candles.get(i - 1).low &&
+                    c.low <
+                    candles.get(i - 2).low &&
+                    c.low <
+                    candles.get(i + 1).low &&
+                    c.low <
+                    candles.get(i + 2).low) {
+
+                lows.add(c.low);
+            }
+        }
+
+        if (highs.size() < 2 ||
+                lows.size() < 2) {
+
+            return DIR_NONE;
+        }
+
+        double lastHigh =
+                highs.get(highs.size() - 1);
+
+        double previousHigh =
+                highs.get(highs.size() - 2);
+
+        double lastLow =
+                lows.get(lows.size() - 1);
+
+        double previousLow =
+                lows.get(lows.size() - 2);
 
         boolean bullish =
-                lastHigh.price > prevHigh.price &&
-                lastLow.price > prevLow.price;
+                lastHigh > previousHigh &&
+                        lastLow > previousLow;
 
         boolean bearish =
-                lastHigh.price < prevHigh.price &&
-                lastLow.price < prevLow.price;
+                lastHigh < previousHigh &&
+                        lastLow < previousLow;
 
-        if (bullish) return DIR_BUY;
-        if (bearish) return DIR_SELL;
+        if (bullish) {
+            return DIR_BUY;
+        }
+
+        if (bearish) {
+            return DIR_SELL;
+        }
+
         return DIR_NONE;
     }
 
@@ -1828,78 +1789,64 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // M15 BREAKOUT DETECTION — V13 REAL SWING BREAK
+    // M15 BREAKOUT DETECTION
     // =========================================================
 
     private BreakInfo detectLatestM15Break(
             ArrayList<Candle> candles) {
 
-        if (candles.size() < 20) {
-            return new BreakInfo(DIR_NONE, 0, 0);
+        if (candles.size() < 10) {
+
+            return new BreakInfo(
+                    DIR_NONE,
+                    0,
+                    0
+            );
         }
 
-        ArrayList<SwingPoint> swings = confirmedSwings(candles);
-        if (swings.size() < 4) {
-            return new BreakInfo(DIR_NONE, 0, 0);
-        }
+        int last =
+                candles.size() - 1;
 
-        double atrM15 = atr(candles, 14);
-        double buffer = Math.max(atrM15 * 0.10, 0.20);
+        Candle c =
+                candles.get(last);
 
-        int last = candles.size() - 1;
-        int firstScan = Math.max(1, last - 12);
-
-        // Find the latest confirmed swing high/low that existed BEFORE
-        // each candidate break candle. A break requires a candle CLOSE
-        // beyond that actual pivot, not merely a wick through it.
-        for (int i = last; i >= firstScan; i--) {
-            Candle c = candles.get(i);
-            Candle prev = candles.get(i - 1);
-
-            double priorHigh = Double.NaN;
-            double priorLow = Double.NaN;
-
-            for (int j = swings.size() - 1; j >= 0; j--) {
-                SwingPoint sp = swings.get(j);
-                if (sp.index >= i - 2) continue;
-
-                if (Double.isNaN(priorHigh) && sp.high) {
-                    priorHigh = sp.price;
-                }
-
-                if (Double.isNaN(priorLow) && !sp.high) {
-                    priorLow = sp.price;
-                }
-
-                if (!Double.isNaN(priorHigh) && !Double.isNaN(priorLow)) {
-                    break;
-                }
-            }
-
-            if (!Double.isNaN(priorHigh) &&
-                    prev.close <= priorHigh &&
-                    c.close > priorHigh + buffer) {
-
-                return new BreakInfo(
-                        DIR_BUY,
-                        priorHigh,
-                        c.openTime
+        double highLevel =
+                previousHigh(
+                        candles,
+                        6,
+                        1
                 );
-            }
 
-            if (!Double.isNaN(priorLow) &&
-                    prev.close >= priorLow &&
-                    c.close < priorLow - buffer) {
-
-                return new BreakInfo(
-                        DIR_SELL,
-                        priorLow,
-                        c.openTime
+        double lowLevel =
+                previousLow(
+                        candles,
+                        6,
+                        1
                 );
-            }
+
+        if (c.close > highLevel) {
+
+            return new BreakInfo(
+                    DIR_BUY,
+                    highLevel,
+                    c.openTime
+            );
         }
 
-        return new BreakInfo(DIR_NONE, 0, 0);
+        if (c.close < lowLevel) {
+
+            return new BreakInfo(
+                    DIR_SELL,
+                    lowLevel,
+                    c.openTime
+            );
+        }
+
+        return new BreakInfo(
+                DIR_NONE,
+                0,
+                0
+        );
     }
 
     // =========================================================
