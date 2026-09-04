@@ -12,12 +12,9 @@ import android.widget.TextView;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -49,29 +46,6 @@ public class MainActivity extends Activity {
     private static final int DIR_NONE = 0;
     private static final int DIR_BUY = 1;
     private static final int DIR_SELL = -1;
-
-    // ---- RSI Exhaustion Filter ----
-    private static final int RSI_PERIOD = 14;
-
-    // ---- Session Filter (UTC) ----
-    // فاز فعال اصلی: از باز شدن London تا بسته شدن New York
-    private static final int SESSION_START_HOUR_UTC = 7;
-    private static final int SESSION_END_HOUR_UTC = 20;
-
-    // هم‌پوشانی London + New York — بالاترین نقدینگی طلا
-    private static final int OVERLAP_START_HOUR_UTC = 12;
-    private static final int OVERLAP_END_HOUR_UTC = 16;
-
-    // ---- Round Number / سطوح روانی ----
-    private static final double ROUND_NUMBER_STEP = 50.0;
-    private static final double ROUND_NUMBER_PROXIMITY = 1.5;
-
-    // ---- Risk Sanity ----
-    // اگر ریسک سیگنال بیش از این ضریب از ATR باشد، هشدار داده می‌شود
-    private static final double MAX_RISK_ATR_MULT = 3.0;
-
-    // ---- Trade Journal ----
-    private static final String JOURNAL_FILE = "trade_journal.txt";
 
     // =========================================================
     // UI
@@ -108,9 +82,6 @@ public class MainActivity extends Activity {
     private TextView analysis;
     private Button refresh;
 
-    private TextView filtersInfo;
-    private TextView tradeMonitor;
-
     // =========================================================
     // NETWORK
     // =========================================================
@@ -144,23 +115,6 @@ public class MainActivity extends Activity {
     private int activeBreakDirection = DIR_NONE;
     private double activeBreakLevel = 0;
     private long activeBreakTime = 0;
-
-    // =========================================================
-    // ACTIVE VIRTUAL TRADE (Trade Lifecycle Monitor)
-    // =========================================================
-    // این وضعیت، معامله‌ای که کاربر بر اساس یک سیگنال READY وارد
-    // شده را (به‌صورت مجازی) دنبال می‌کند تا پیشنهاد Break-even،
-    // برخورد به TP/SL و نقض ساختار در حین معامله را نشان دهد.
-    // اپ معامله واقعی اجرا نمی‌کند؛ این فقط یک دستیار پایش است.
-
-    private int activeTradeDirection = DIR_NONE;
-    private double activeTradeEntry = 0;
-    private double activeTradeSL = 0;
-    private double activeTradeTP1 = 0;
-    private double activeTradeTP2 = 0;
-    private double activeTradeTP3 = 0;
-    private boolean activeTradeTp1Hit = false;
-    private long activeTradeOpenTime = 0;
 
     // =========================================================
     // CANDLE
@@ -230,9 +184,6 @@ public class MainActivity extends Activity {
 
         analysis = findViewById(R.id.analysis);
         refresh = findViewById(R.id.refresh);
-
-        filtersInfo = findViewById(R.id.filtersInfo);
-        tradeMonitor = findViewById(R.id.tradeMonitor);
 
         refresh.setOnClickListener(v -> loadAll());
 
@@ -737,15 +688,6 @@ public class MainActivity extends Activity {
         }
 
         // ---------------------------------------------
-        // BREAKOUT INVALIDATION
-        // ---------------------------------------------
-        // اگر Break فعال قدیمی شده یا قیمت به‌وضوح در خلاف جهت آن
-        // حرکت کرده، آن را باطل می‌کنیم تا Pullback بی‌اعتبار و
-        // دیرهنگام باعث سیگنال کاذب نشود.
-
-        invalidateStaleBreak(atrM5);
-
-        // ---------------------------------------------
         // PULLBACK
         // ---------------------------------------------
 
@@ -791,48 +733,6 @@ public class MainActivity extends Activity {
         if (bearStructureBreak) sellScore += 20;
         if (bearConfirmation) sellScore += 15;
         if (sellPullback) sellScore += 10;
-
-        // ---------------------------------------------
-        // FILTER 1: RSI EXHAUSTION / DIVERGENCE
-        // ---------------------------------------------
-        // اگر قیمت M5 در حال ثبت High/Low جدید است ولی RSI آن را
-        // تأیید نمی‌کند، احتمال خستگی حرکت وجود دارد. این کیفیت
-        // سیگنال هم‌جهت با آن واگرایی را کاهش می‌دهد (سیگنال را
-        // کاملاً رد نمی‌کند، چون واگرایی به‌تنهایی قطعی نیست).
-
-        double[] rsiM5 = calcRsiSeries(m5, RSI_PERIOD);
-
-        boolean bearishDivergence = bearishRsiDivergence(m5, rsiM5);
-        boolean bullishDivergence = bullishRsiDivergence(m5, rsiM5);
-
-        if (bearishDivergence) buyScore -= 15;
-        if (bullishDivergence) sellScore -= 15;
-
-        // ---------------------------------------------
-        // FILTER 2: TRADING SESSION (نقدینگی)
-        // ---------------------------------------------
-        // خارج از Session اصلی (London → New York) نقدینگی طلا
-        // پایین‌تر و نویز/Spread بیشتر است.
-
-        long lastM5Time = m5.get(m5.size() - 1).openTime;
-
-        boolean activeSession = isActiveSession(lastM5Time);
-        boolean overlapSession = isOverlapSession(lastM5Time);
-
-        if (!activeSession) {
-            buyScore -= 10;
-            sellScore -= 10;
-        }
-
-        buyScore = Math.max(0, Math.min(100, buyScore));
-        sellScore = Math.max(0, Math.min(100, sellScore));
-
-        updateFiltersUI(
-                activeSession,
-                overlapSession,
-                bearishDivergence,
-                bullishDivergence
-        );
 
         // ---------------------------------------------
         // READY
@@ -927,81 +827,10 @@ public class MainActivity extends Activity {
         // FINAL STATE
         // ---------------------------------------------
 
-        // Entry/SL/TP یک‌بار محاسبه می‌شود تا هم در نمایش BUY/SELL
-        // READY و هم در Trade Monitor از همان اعداد استفاده شود.
-
-        double entry = m5.get(m5.size() - 1).close;
-
-        double buyPullbackLow = recentLow(m5, 5, 0);
-        double buySlByPullback =
-                buyPullbackLow - Math.max(atrM5 * 0.20, 0.30);
-        double buySlByAtr = entry - atrM5 * 1.50;
-        double buySl = Math.min(buySlByPullback, buySlByAtr);
-        double buyRisk = entry - buySl;
-
-        if (buyRisk <= 0) {
-            buyRisk = Math.max(atrM5, 0.30);
-            buySl = entry - buyRisk;
-        }
-
-        double buyTp1 = entry + buyRisk;
-        double buyTp2 = entry + buyRisk * 2.0;
-        double buyTp3 = entry + buyRisk * 3.0;
-
-        double sellPullbackHigh = recentHigh(m5, 5, 0);
-        double sellSlByPullback =
-                sellPullbackHigh + Math.max(atrM5 * 0.20, 0.30);
-        double sellSlByAtr = entry + atrM5 * 1.50;
-        double sellSl = Math.max(sellSlByPullback, sellSlByAtr);
-        double sellRisk = sellSl - entry;
-
-        if (sellRisk <= 0) {
-            sellRisk = Math.max(atrM5, 0.30);
-            sellSl = entry + sellRisk;
-        }
-
-        double sellTp1 = entry - sellRisk;
-        double sellTp2 = entry - sellRisk * 2.0;
-        double sellTp3 = entry - sellRisk * 3.0;
-
-        // ---- Trade Monitor: باز کردن معامله مجازی جدید ----
-        // فقط وقتی معامله دیگری از قبل فعال نیست تا سیگنال‌های
-        // تکراری هر ۱۵ ثانیه، معامله را دوباره باز نکنند.
-
-        if (buyReady && activeTradeDirection == DIR_NONE) {
-
-            openVirtualTrade(
-                    DIR_BUY,
-                    entry,
-                    buySl,
-                    buyTp1,
-                    buyTp2,
-                    buyTp3
-            );
-
-        } else if (sellReady && activeTradeDirection == DIR_NONE) {
-
-            openVirtualTrade(
-                    DIR_SELL,
-                    entry,
-                    sellSl,
-                    sellTp1,
-                    sellTp2,
-                    sellTp3
-            );
-        }
-
-        checkActiveTrade(structure);
-
         if (buyReady) {
 
             showBuyReady(
                     buyScore,
-                    entry,
-                    buySl,
-                    buyTp1,
-                    buyTp2,
-                    buyTp3,
                     atrM5
             );
 
@@ -1009,11 +838,6 @@ public class MainActivity extends Activity {
 
             showSellReady(
                     sellScore,
-                    entry,
-                    sellSl,
-                    sellTp1,
-                    sellTp2,
-                    sellTp3,
                     atrM5
             );
 
@@ -1243,11 +1067,6 @@ public class MainActivity extends Activity {
 
     private void showBuyReady(
             int score,
-            double entry,
-            double sl,
-            double tp1,
-            double tp2,
-            double tp3,
             double atrM5) {
 
         status.setText("BUY READY");
@@ -1263,11 +1082,21 @@ public class MainActivity extends Activity {
                 "🟢 BUY READY — شرایط ورود تأیید شده است."
         );
 
+        double entry = m5.get(m5.size() - 1).close;
+        double pullbackLow = recentLow(m5, 5, 0);
+        double slByPullback = pullbackLow - Math.max(atrM5 * 0.20, 0.30);
+        double slByAtr = entry - atrM5 * 1.50;
+        double sl = Math.min(slByPullback, slByAtr);
         double risk = entry - sl;
 
-        String warnings =
-                riskWarning(risk, atrM5) +
-                        roundNumberWarnings(sl, tp1, tp2, tp3);
+        if (risk <= 0) {
+            risk = Math.max(atrM5, 0.30);
+            sl = entry - risk;
+        }
+
+        double tp1 = entry + risk;
+        double tp2 = entry + risk * 2.0;
+        double tp3 = entry + risk * 3.0;
 
         setupReason.setText(
                 "شکست ساختار M15 ✓\n" +
@@ -1278,8 +1107,7 @@ public class MainActivity extends Activity {
                         "STOP LOSS: " + fmt(sl) + "\n" +
                         "TP1: " + fmt(tp1) + "\n" +
                         "TP2: " + fmt(tp2) + "\n" +
-                        "TP3: " + fmt(tp3) +
-                        (warnings.isEmpty() ? "" : "\n\n" + warnings)
+                        "TP3: " + fmt(tp3)
         );
 
         setupWaiting.setText(
@@ -1290,11 +1118,6 @@ public class MainActivity extends Activity {
 
     private void showSellReady(
             int score,
-            double entry,
-            double sl,
-            double tp1,
-            double tp2,
-            double tp3,
             double atrM5) {
 
         status.setText("SELL READY");
@@ -1310,11 +1133,21 @@ public class MainActivity extends Activity {
                 "🔴 SELL READY — شرایط ورود تأیید شده است."
         );
 
+        double entry = m5.get(m5.size() - 1).close;
+        double pullbackHigh = recentHigh(m5, 5, 0);
+        double slByPullback = pullbackHigh + Math.max(atrM5 * 0.20, 0.30);
+        double slByAtr = entry + atrM5 * 1.50;
+        double sl = Math.max(slByPullback, slByAtr);
         double risk = sl - entry;
 
-        String warnings =
-                riskWarning(risk, atrM5) +
-                        roundNumberWarnings(sl, tp1, tp2, tp3);
+        if (risk <= 0) {
+            risk = Math.max(atrM5, 0.30);
+            sl = entry + risk;
+        }
+
+        double tp1 = entry - risk;
+        double tp2 = entry - risk * 2.0;
+        double tp3 = entry - risk * 3.0;
 
         setupReason.setText(
                 "شکست ساختار M15 ✓\n" +
@@ -1325,8 +1158,7 @@ public class MainActivity extends Activity {
                         "STOP LOSS: " + fmt(sl) + "\n" +
                         "TP1: " + fmt(tp1) + "\n" +
                         "TP2: " + fmt(tp2) + "\n" +
-                        "TP3: " + fmt(tp3) +
-                        (warnings.isEmpty() ? "" : "\n\n" + warnings)
+                        "TP3: " + fmt(tp3)
         );
 
         setupWaiting.setText(
@@ -1730,95 +1562,91 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // SWING STRUCTURE
+    // SWING STRUCTURE — V13
     // =========================================================
+
+    private static class SwingPoint {
+        int index;
+        double price;
+        boolean high;
+
+        SwingPoint(int index, double price, boolean high) {
+            this.index = index;
+            this.price = price;
+            this.high = high;
+        }
+    }
+
+    private ArrayList<SwingPoint> confirmedSwings(
+            ArrayList<Candle> candles) {
+
+        ArrayList<SwingPoint> swings = new ArrayList<>();
+
+        // 2-left / 2-right confirmation prevents the newest
+        // unfinished candle structure from being treated as a swing.
+        int start = Math.max(2, candles.size() - 80);
+        int end = candles.size() - 3; // last 2 candles must exist after pivot
+
+        for (int i = start; i <= end; i++) {
+            Candle c = candles.get(i);
+
+            boolean isHigh =
+                    c.high > candles.get(i - 1).high &&
+                    c.high >= candles.get(i - 2).high &&
+                    c.high > candles.get(i + 1).high &&
+                    c.high >= candles.get(i + 2).high;
+
+            boolean isLow =
+                    c.low < candles.get(i - 1).low &&
+                    c.low <= candles.get(i - 2).low &&
+                    c.low < candles.get(i + 1).low &&
+                    c.low <= candles.get(i + 2).low;
+
+            if (isHigh) {
+                swings.add(new SwingPoint(i, c.high, true));
+            }
+
+            if (isLow) {
+                swings.add(new SwingPoint(i, c.low, false));
+            }
+        }
+
+        swings.sort((a, b) -> Integer.compare(a.index, b.index));
+        return swings;
+    }
 
     private int swingStructure(
             ArrayList<Candle> candles) {
 
-        if (candles.size() < 15) {
+        ArrayList<SwingPoint> swings = confirmedSwings(candles);
+
+        ArrayList<SwingPoint> highs = new ArrayList<>();
+        ArrayList<SwingPoint> lows = new ArrayList<>();
+
+        for (SwingPoint s : swings) {
+            if (s.high) highs.add(s);
+            else lows.add(s);
+        }
+
+        if (highs.size() < 2 || lows.size() < 2) {
             return DIR_NONE;
         }
 
-        List<Double> highs =
-                new ArrayList<>();
-
-        List<Double> lows =
-                new ArrayList<>();
-
-        int start =
-                Math.max(
-                        2,
-                        candles.size() - 50
-                );
-
-        int end =
-                candles.size() - 3;
-
-        for (int i = start; i <= end; i++) {
-
-            Candle c =
-                    candles.get(i);
-
-            if (c.high >
-                    candles.get(i - 1).high &&
-                    c.high >
-                    candles.get(i - 2).high &&
-                    c.high >
-                    candles.get(i + 1).high &&
-                    c.high >
-                    candles.get(i + 2).high) {
-
-                highs.add(c.high);
-            }
-
-            if (c.low <
-                    candles.get(i - 1).low &&
-                    c.low <
-                    candles.get(i - 2).low &&
-                    c.low <
-                    candles.get(i + 1).low &&
-                    c.low <
-                    candles.get(i + 2).low) {
-
-                lows.add(c.low);
-            }
-        }
-
-        if (highs.size() < 2 ||
-                lows.size() < 2) {
-
-            return DIR_NONE;
-        }
-
-        double lastHigh =
-                highs.get(highs.size() - 1);
-
-        double previousHigh =
-                highs.get(highs.size() - 2);
-
-        double lastLow =
-                lows.get(lows.size() - 1);
-
-        double previousLow =
-                lows.get(lows.size() - 2);
+        SwingPoint lastHigh = highs.get(highs.size() - 1);
+        SwingPoint prevHigh = highs.get(highs.size() - 2);
+        SwingPoint lastLow = lows.get(lows.size() - 1);
+        SwingPoint prevLow = lows.get(lows.size() - 2);
 
         boolean bullish =
-                lastHigh > previousHigh &&
-                        lastLow > previousLow;
+                lastHigh.price > prevHigh.price &&
+                lastLow.price > prevLow.price;
 
         boolean bearish =
-                lastHigh < previousHigh &&
-                        lastLow < previousLow;
+                lastHigh.price < prevHigh.price &&
+                lastLow.price < prevLow.price;
 
-        if (bullish) {
-            return DIR_BUY;
-        }
-
-        if (bearish) {
-            return DIR_SELL;
-        }
-
+        if (bullish) return DIR_BUY;
+        if (bearish) return DIR_SELL;
         return DIR_NONE;
     }
 
@@ -2000,115 +1828,78 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // BREAKOUT INVALIDATION
-    // =========================================================
-    // یک Break فعال در دو حالت باطل می‌شود:
-    // 1) اگر بیش از حد قدیمی شده و Pullback رخ نداده (Expiry)
-    // 2) اگر قیمت به‌وضوح در خلاف جهت Break حرکت کرده (Fake Breakout)
-
-    private static final long BREAK_MAX_AGE_MS =
-            60L * 60L * 1000L; // 1 ساعت
-
-    private static final double BREAK_INVALIDATION_ATR_MULT = 1.0;
-
-    private void invalidateStaleBreak(double atrM5) {
-
-        if (activeBreakDirection == DIR_NONE
-                || activeBreakTime <= 0
-                || m5.isEmpty()) {
-            return;
-        }
-
-        long now =
-                m5.get(m5.size() - 1).openTime;
-
-        boolean expired =
-                (now - activeBreakTime) > BREAK_MAX_AGE_MS;
-
-        boolean invalidatedByPrice = false;
-
-        if (activeBreakDirection == DIR_BUY) {
-
-            invalidatedByPrice =
-                    livePrice <
-                            activeBreakLevel
-                                    - atrM5 * BREAK_INVALIDATION_ATR_MULT;
-
-        } else if (activeBreakDirection == DIR_SELL) {
-
-            invalidatedByPrice =
-                    livePrice >
-                            activeBreakLevel
-                                    + atrM5 * BREAK_INVALIDATION_ATR_MULT;
-        }
-
-        if (expired || invalidatedByPrice) {
-
-            activeBreakDirection = DIR_NONE;
-            activeBreakLevel = 0;
-            activeBreakTime = 0;
-        }
-    }
-
-    // =========================================================
-    // M15 BREAKOUT DETECTION
+    // M15 BREAKOUT DETECTION — V13 REAL SWING BREAK
     // =========================================================
 
     private BreakInfo detectLatestM15Break(
             ArrayList<Candle> candles) {
 
-        if (candles.size() < 10) {
-
-            return new BreakInfo(
-                    DIR_NONE,
-                    0,
-                    0
-            );
+        if (candles.size() < 20) {
+            return new BreakInfo(DIR_NONE, 0, 0);
         }
 
-        int last =
-                candles.size() - 1;
+        ArrayList<SwingPoint> swings = confirmedSwings(candles);
+        if (swings.size() < 4) {
+            return new BreakInfo(DIR_NONE, 0, 0);
+        }
 
-        Candle c =
-                candles.get(last);
+        double atrM15 = atr(candles, 14);
+        double buffer = Math.max(atrM15 * 0.10, 0.20);
 
-        double highLevel =
-                previousHigh(
-                        candles,
-                        6,
-                        1
+        int last = candles.size() - 1;
+        int firstScan = Math.max(1, last - 12);
+
+        // Find the latest confirmed swing high/low that existed BEFORE
+        // each candidate break candle. A break requires a candle CLOSE
+        // beyond that actual pivot, not merely a wick through it.
+        for (int i = last; i >= firstScan; i--) {
+            Candle c = candles.get(i);
+            Candle prev = candles.get(i - 1);
+
+            double priorHigh = Double.NaN;
+            double priorLow = Double.NaN;
+
+            for (int j = swings.size() - 1; j >= 0; j--) {
+                SwingPoint sp = swings.get(j);
+                if (sp.index >= i - 2) continue;
+
+                if (Double.isNaN(priorHigh) && sp.high) {
+                    priorHigh = sp.price;
+                }
+
+                if (Double.isNaN(priorLow) && !sp.high) {
+                    priorLow = sp.price;
+                }
+
+                if (!Double.isNaN(priorHigh) && !Double.isNaN(priorLow)) {
+                    break;
+                }
+            }
+
+            if (!Double.isNaN(priorHigh) &&
+                    prev.close <= priorHigh &&
+                    c.close > priorHigh + buffer) {
+
+                return new BreakInfo(
+                        DIR_BUY,
+                        priorHigh,
+                        c.openTime
                 );
+            }
 
-        double lowLevel =
-                previousLow(
-                        candles,
-                        6,
-                        1
+            if (!Double.isNaN(priorLow) &&
+                    prev.close >= priorLow &&
+                    c.close < priorLow - buffer) {
+
+                return new BreakInfo(
+                        DIR_SELL,
+                        priorLow,
+                        c.openTime
                 );
-
-        if (c.close > highLevel) {
-
-            return new BreakInfo(
-                    DIR_BUY,
-                    highLevel,
-                    c.openTime
-            );
+            }
         }
 
-        if (c.close < lowLevel) {
-
-            return new BreakInfo(
-                    DIR_SELL,
-                    lowLevel,
-                    c.openTime
-            );
-        }
-
-        return new BreakInfo(
-                DIR_NONE,
-                0,
-                0
-        );
+        return new BreakInfo(DIR_NONE, 0, 0);
     }
 
     // =========================================================
@@ -2273,508 +2064,6 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // RSI (Wilder Smoothing) + DIVERGENCE
-    // =========================================================
-
-    private double[] calcRsiSeries(
-            ArrayList<Candle> candles,
-            int period) {
-
-        double[] rsi = new double[candles.size()];
-
-        if (candles.size() < period + 1) {
-            return rsi;
-        }
-
-        double gainSum = 0;
-        double lossSum = 0;
-
-        for (int i = 1; i <= period; i++) {
-
-            double change =
-                    candles.get(i).close - candles.get(i - 1).close;
-
-            if (change >= 0) {
-                gainSum += change;
-            } else {
-                lossSum += -change;
-            }
-        }
-
-        double avgGain = gainSum / period;
-        double avgLoss = lossSum / period;
-
-        rsi[period] = rsiFromAvg(avgGain, avgLoss);
-
-        for (int i = period + 1; i < candles.size(); i++) {
-
-            double change =
-                    candles.get(i).close - candles.get(i - 1).close;
-
-            double gain = change > 0 ? change : 0;
-            double loss = change < 0 ? -change : 0;
-
-            avgGain = (avgGain * (period - 1) + gain) / period;
-            avgLoss = (avgLoss * (period - 1) + loss) / period;
-
-            rsi[i] = rsiFromAvg(avgGain, avgLoss);
-        }
-
-        return rsi;
-    }
-
-    private double rsiFromAvg(
-            double avgGain,
-            double avgLoss) {
-
-        if (avgLoss == 0) {
-            return 100;
-        }
-
-        double rs = avgGain / avgLoss;
-        return 100 - (100 / (1 + rs));
-    }
-
-    // اگر قیمت High جدید بالاتری می‌سازد ولی RSI پایین‌تر می‌آید
-    // → واگرایی نزولی → هشدار خستگی برای BUY
-    private boolean bearishRsiDivergence(
-            ArrayList<Candle> candles,
-            double[] rsi) {
-
-        int n = candles.size();
-        if (n < 20) return false;
-
-        int idxA = swingHighIndex(candles, n - 15, n - 6);
-        int idxB = swingHighIndex(candles, n - 5, n - 1);
-
-        if (idxA < 0 || idxB < 0) return false;
-        if (rsi[idxA] == 0 || rsi[idxB] == 0) return false;
-
-        boolean priceHigherHigh =
-                candles.get(idxB).high > candles.get(idxA).high;
-
-        boolean rsiLowerHigh =
-                rsi[idxB] < rsi[idxA];
-
-        return priceHigherHigh && rsiLowerHigh && rsi[idxB] > 55;
-    }
-
-    // اگر قیمت Low جدید پایین‌تری می‌سازد ولی RSI بالاتر می‌آید
-    // → واگرایی صعودی → هشدار خستگی برای SELL
-    private boolean bullishRsiDivergence(
-            ArrayList<Candle> candles,
-            double[] rsi) {
-
-        int n = candles.size();
-        if (n < 20) return false;
-
-        int idxA = swingLowIndex(candles, n - 15, n - 6);
-        int idxB = swingLowIndex(candles, n - 5, n - 1);
-
-        if (idxA < 0 || idxB < 0) return false;
-        if (rsi[idxA] == 0 || rsi[idxB] == 0) return false;
-
-        boolean priceLowerLow =
-                candles.get(idxB).low < candles.get(idxA).low;
-
-        boolean rsiHigherLow =
-                rsi[idxB] > rsi[idxA];
-
-        return priceLowerLow && rsiHigherLow && rsi[idxB] < 45;
-    }
-
-    private int swingHighIndex(
-            ArrayList<Candle> candles,
-            int start,
-            int endInclusive) {
-
-        start = Math.max(0, start);
-        endInclusive = Math.min(candles.size() - 1, endInclusive);
-
-        int best = -1;
-        double bestHigh = -1;
-
-        for (int i = start; i <= endInclusive; i++) {
-
-            if (candles.get(i).high > bestHigh) {
-                bestHigh = candles.get(i).high;
-                best = i;
-            }
-        }
-
-        return best;
-    }
-
-    private int swingLowIndex(
-            ArrayList<Candle> candles,
-            int start,
-            int endInclusive) {
-
-        start = Math.max(0, start);
-        endInclusive = Math.min(candles.size() - 1, endInclusive);
-
-        int best = -1;
-        double bestLow = Double.MAX_VALUE;
-
-        for (int i = start; i <= endInclusive; i++) {
-
-            if (candles.get(i).low < bestLow) {
-                bestLow = candles.get(i).low;
-                best = i;
-            }
-        }
-
-        return best;
-    }
-
-    // =========================================================
-    // SESSION FILTER (UTC)
-    // =========================================================
-
-    private boolean isActiveSession(long timeMs) {
-
-        int hour = utcHour(timeMs);
-
-        return hour >= SESSION_START_HOUR_UTC
-                && hour < SESSION_END_HOUR_UTC;
-    }
-
-    private boolean isOverlapSession(long timeMs) {
-
-        int hour = utcHour(timeMs);
-
-        return hour >= OVERLAP_START_HOUR_UTC
-                && hour < OVERLAP_END_HOUR_UTC;
-    }
-
-    private int utcHour(long timeMs) {
-
-        Calendar cal =
-                Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-
-        cal.setTimeInMillis(timeMs);
-
-        return cal.get(Calendar.HOUR_OF_DAY);
-    }
-
-    private void updateFiltersUI(
-            boolean activeSession,
-            boolean overlapSession,
-            boolean bearishDivergence,
-            boolean bullishDivergence) {
-
-        if (filtersInfo == null) {
-            return;
-        }
-
-        StringBuilder sb = new StringBuilder();
-
-        if (overlapSession) {
-            sb.append("🟢 Session: London/NY Overlap (نقدینگی بالا)\n");
-        } else if (activeSession) {
-            sb.append("🟡 Session: فعال (نقدینگی متوسط)\n");
-        } else {
-            sb.append("🔴 Session: خارج از ساعات اصلی بازار (نقدینگی پایین)\n");
-        }
-
-        if (bearishDivergence) {
-            sb.append("⚠️ واگرایی نزولی RSI در M5 — احتمال خستگی حرکت صعودی\n");
-        }
-
-        if (bullishDivergence) {
-            sb.append("⚠️ واگرایی صعودی RSI در M5 — احتمال خستگی حرکت نزولی\n");
-        }
-
-        if (!bearishDivergence && !bullishDivergence) {
-            sb.append("واگرایی RSI قابل توجهی مشاهده نشد.");
-        }
-
-        filtersInfo.setText(sb.toString().trim());
-    }
-
-    // =========================================================
-    // ROUND NUMBER FILTER
-    // =========================================================
-
-    private boolean nearRoundNumber(double price) {
-
-        double remainder = price % ROUND_NUMBER_STEP;
-
-        if (remainder < 0) {
-            remainder += ROUND_NUMBER_STEP;
-        }
-
-        double distance =
-                Math.min(remainder, ROUND_NUMBER_STEP - remainder);
-
-        return distance <= ROUND_NUMBER_PROXIMITY;
-    }
-
-    private String roundNumberWarnings(
-            double sl,
-            double tp1,
-            double tp2,
-            double tp3) {
-
-        StringBuilder sb = new StringBuilder();
-
-        if (nearRoundNumber(sl)) {
-            sb.append("⚠️ Stop Loss نزدیک یک سطح روانی رند است.\n");
-        }
-
-        if (nearRoundNumber(tp1)) {
-            sb.append("⚠️ TP1 نزدیک یک سطح روانی رند است.\n");
-        }
-
-        if (nearRoundNumber(tp2)) {
-            sb.append("⚠️ TP2 نزدیک یک سطح روانی رند است.\n");
-        }
-
-        if (nearRoundNumber(tp3)) {
-            sb.append("⚠️ TP3 نزدیک یک سطح روانی رند است.\n");
-        }
-
-        return sb.toString();
-    }
-
-    // =========================================================
-    // RISK SANITY
-    // =========================================================
-
-    private String riskWarning(
-            double risk,
-            double atrM5) {
-
-        if (atrM5 <= 0) {
-            return "";
-        }
-
-        double ratio = risk / atrM5;
-
-        if (ratio > MAX_RISK_ATR_MULT) {
-
-            return "⚠️ ریسک این سیگنال (" +
-                    fmt(risk) +
-                    ") نسبت به نوسان فعلی بازار (ATR M5: " +
-                    fmt(atrM5) +
-                    ") غیرعادی بزرگ است؛ در تصمیم‌گیری محتاط باشید.\n";
-        }
-
-        return "";
-    }
-
-    // =========================================================
-    // TRADE JOURNAL
-    // =========================================================
-
-    private void appendJournal(String line) {
-
-        try {
-
-            String timestamp =
-                    new SimpleDateFormat(
-                            "yyyy-MM-dd HH:mm:ss",
-                            Locale.US
-                    ).format(new Date());
-
-            String full = timestamp + " | " + line + "\n";
-
-            FileOutputStream fos =
-                    openFileOutput(JOURNAL_FILE, MODE_APPEND);
-
-            fos.write(full.getBytes(StandardCharsets.UTF_8));
-            fos.close();
-
-        } catch (Exception ignored) {
-            // ثبت ژورنال هرگز نباید باعث Crash یا قطع تحلیل شود
-        }
-    }
-
-    // =========================================================
-    // TRADE LIFECYCLE MONITOR
-    // =========================================================
-
-    private void openVirtualTrade(
-            int direction,
-            double entry,
-            double sl,
-            double tp1,
-            double tp2,
-            double tp3) {
-
-        activeTradeDirection = direction;
-        activeTradeEntry = entry;
-        activeTradeSL = sl;
-        activeTradeTP1 = tp1;
-        activeTradeTP2 = tp2;
-        activeTradeTP3 = tp3;
-        activeTradeTp1Hit = false;
-        activeTradeOpenTime = System.currentTimeMillis();
-
-        appendJournal(
-                "OPEN," +
-                        (direction == DIR_BUY ? "BUY" : "SELL") +
-                        ",ENTRY=" + fmt(entry) +
-                        ",SL=" + fmt(sl) +
-                        ",TP1=" + fmt(tp1) +
-                        ",TP2=" + fmt(tp2) +
-                        ",TP3=" + fmt(tp3)
-        );
-    }
-
-    private void clearActiveTrade() {
-
-        activeTradeDirection = DIR_NONE;
-        activeTradeEntry = 0;
-        activeTradeSL = 0;
-        activeTradeTP1 = 0;
-        activeTradeTP2 = 0;
-        activeTradeTP3 = 0;
-        activeTradeTp1Hit = false;
-        activeTradeOpenTime = 0;
-    }
-
-    private void checkActiveTrade(int currentStructure) {
-
-        if (tradeMonitor == null) {
-            return;
-        }
-
-        if (activeTradeDirection == DIR_NONE) {
-            tradeMonitor.setText(
-                    "📭 هیچ معامله فعالی برای پایش وجود ندارد."
-            );
-            return;
-        }
-
-        String directionLabel =
-                activeTradeDirection == DIR_BUY ? "BUY" : "SELL";
-
-        if (activeTradeDirection == DIR_BUY) {
-
-            if (livePrice <= activeTradeSL) {
-
-                appendJournal(
-                        "CLOSE,BUY,SL_HIT,PRICE=" + fmt(livePrice)
-                );
-
-                tradeMonitor.setText(
-                        "🔴 معامله BUY به Stop Loss (" +
-                                fmt(activeTradeSL) +
-                                ") خورد.\nنتیجه در Journal ثبت شد."
-                );
-
-                clearActiveTrade();
-                return;
-            }
-
-            if (!activeTradeTp1Hit && livePrice >= activeTradeTP1) {
-
-                activeTradeTp1Hit = true;
-
-                appendJournal(
-                        "TP1_HIT,BUY,PRICE=" + fmt(livePrice)
-                );
-            }
-
-            if (livePrice >= activeTradeTP3) {
-
-                appendJournal(
-                        "CLOSE,BUY,TP3_HIT,PRICE=" + fmt(livePrice)
-                );
-
-                tradeMonitor.setText(
-                        "🟢 معامله BUY به TP3 (" +
-                                fmt(activeTradeTP3) +
-                                ") رسید."
-                );
-
-                clearActiveTrade();
-                return;
-            }
-
-        } else {
-
-            if (livePrice >= activeTradeSL) {
-
-                appendJournal(
-                        "CLOSE,SELL,SL_HIT,PRICE=" + fmt(livePrice)
-                );
-
-                tradeMonitor.setText(
-                        "🔴 معامله SELL به Stop Loss (" +
-                                fmt(activeTradeSL) +
-                                ") خورد.\nنتیجه در Journal ثبت شد."
-                );
-
-                clearActiveTrade();
-                return;
-            }
-
-            if (!activeTradeTp1Hit && livePrice <= activeTradeTP1) {
-
-                activeTradeTp1Hit = true;
-
-                appendJournal(
-                        "TP1_HIT,SELL,PRICE=" + fmt(livePrice)
-                );
-            }
-
-            if (livePrice <= activeTradeTP3) {
-
-                appendJournal(
-                        "CLOSE,SELL,TP3_HIT,PRICE=" + fmt(livePrice)
-                );
-
-                tradeMonitor.setText(
-                        "🟢 معامله SELL به TP3 (" +
-                                fmt(activeTradeTP3) +
-                                ") رسید."
-                );
-
-                clearActiveTrade();
-                return;
-            }
-        }
-
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("📍 معامله ")
-                .append(directionLabel)
-                .append(" باز — Entry: ")
-                .append(fmt(activeTradeEntry))
-                .append("\n");
-
-        sb.append("SL فعلی: ").append(fmt(activeTradeSL)).append("\n");
-
-        if (activeTradeTp1Hit) {
-            sb.append(
-                    "✅ TP1 لمس شد — پیشنهاد: SL را به Entry " +
-                            "(Break-even) منتقل کنید.\n"
-            );
-        }
-
-        sb.append("TP1: ").append(fmt(activeTradeTP1))
-                .append(" | TP2: ").append(fmt(activeTradeTP2))
-                .append(" | TP3: ").append(fmt(activeTradeTP3));
-
-        boolean structureAgainstTrade =
-                (activeTradeDirection == DIR_BUY
-                        && currentStructure == DIR_SELL)
-                        || (activeTradeDirection == DIR_SELL
-                        && currentStructure == DIR_BUY);
-
-        if (structureAgainstTrade) {
-            sb.append(
-                    "\n\n⚠️ ساختار M15 در جهت مخالف معامله شما " +
-                            "تغییر کرده؛ خروج زودهنگام را بررسی کنید."
-            );
-        }
-
-        tradeMonitor.setText(sb.toString());
-    }
-
-    // =========================================================
     // RECENT HIGH
     // =========================================================
 
@@ -2818,4 +2107,4 @@ public class MainActivity extends Activity {
                 value
         );
     }
-            }
+}
