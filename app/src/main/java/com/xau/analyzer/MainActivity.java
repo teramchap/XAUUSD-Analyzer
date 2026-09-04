@@ -1271,7 +1271,19 @@ public class MainActivity extends Activity {
         b.append(title).append("\n\n");
 
         if (direction != DIR_NONE && breakLevel > 0) {
-            b.append("BREAK LEVEL   ").append(fmt(breakLevel)).append("\n");
+            b.append("BREAK LEVEL      ").append(fmt(breakLevel)).append("\n");
+
+            // The pullback zone is intentionally provisional: it is a watch
+            // area around the broken level, not an entry signal.
+            double zoneTolerance = Math.max(atrM5 * 0.25, 0.30);
+            double zoneLow = breakLevel - zoneTolerance;
+            double zoneHigh = breakLevel + zoneTolerance;
+
+            b.append("PULLBACK ZONE    ")
+                    .append(fmt(zoneLow))
+                    .append(" – ")
+                    .append(fmt(zoneHigh))
+                    .append("\n");
         }
 
         if (confirmationTime > 0) {
@@ -1306,11 +1318,11 @@ public class MainActivity extends Activity {
             );
         } else if (pullbackTime > 0) {
             tradePlanNote.setText(
-                    "Pullback تشکیل شده؛ منتظر شکست High/Low کندل Pullback و تأیید نهایی Entry هستیم."
+                    "Pullback تشکیل شده؛ حالا منتظر تأیید نهایی Entry هستیم. SL و TP فقط بعد از تأیید ورود محاسبه می‌شوند."
             );
         } else if (confirmationTime > 0) {
             tradePlanNote.setText(
-                    "Confirmation انجام شده؛ حالا فقط منتظر Pullback معتبر به سطح Breakout هستیم."
+                    "Confirmation انجام شده؛ قیمت باید به محدوده Pullback برگردد. ورود در این مرحله ممنوع است."
             );
         } else {
             tradePlanNote.setText(
