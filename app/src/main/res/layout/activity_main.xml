@@ -1,0 +1,786 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#FAFAFA">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:padding="5dp"
+        android:orientation="horizontal"
+        android:background="#FFFFFF">
+        <TextView
+            android:id="@+id/tabAnalysis"
+            android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+            android:gravity="center" android:text="تحلیل" android:textSize="17sp" android:textStyle="bold"
+            android:textColor="#FFFFFF" android:background="#505050"/>
+        <TextView
+            android:id="@+id/tabChart"
+            android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+            android:layout_marginStart="5dp" android:gravity="center" android:text="نمودار 📈" android:textSize="17sp" android:textStyle="bold"
+            android:textColor="#555555" android:background="#EEEEEE"/>
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+
+        <FrameLayout android:id="@+id/analysisPage" android:layout_width="match_parent" android:layout_height="match_parent">
+            <ScrollView android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true">
+<LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="18dp"
+        android:paddingEnd="18dp"
+        android:paddingTop="18dp"
+        android:paddingBottom="30dp">
+
+        <!-- ================================================= -->
+        <!-- HEADER -->
+        <!-- ================================================= -->
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="XAUUSD Analyzer 🎯"
+                    android:textColor="#505050"
+                    android:textSize="29sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:text="نسخه ۱۸ — Setup → Breakout → Confirmation → Pullback → Entry"
+                    android:textColor="#707070"
+                    android:textSize="15sp" />
+
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/refresh"
+                android:layout_width="48dp"
+                android:layout_height="42dp"
+                android:layout_marginStart="10dp"
+                android:background="#FFFFFF"
+                android:elevation="3dp"
+                android:gravity="center"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:padding="0dp"
+                android:text="↻"
+                android:textColor="#555555"
+                android:textSize="25sp"
+                android:textStyle="bold"
+                android:contentDescription="به‌روزرسانی و تحلیل" />
+
+        </LinearLayout>
+
+
+        <!-- ================================================= -->
+        <!-- DIGITAL PRICE DISPLAY -->
+        <!-- ================================================= -->
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="#050805"
+            android:elevation="7dp"
+            android:orientation="horizontal"
+            android:padding="13dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="112dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:letterSpacing="0.08"
+                    android:text="XAUUSD"
+                    android:textColor="#B7FF00"
+                    android:textSize="19sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/price"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:gravity="center_vertical"
+                    android:letterSpacing="0.04"
+                    android:shadowColor="#80B7FF00"
+                    android:shadowRadius="8"
+                    android:text="4333.22"
+                    android:textColor="#B7FF00"
+                    android:textSize="42sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="105dp"
+                android:layout_height="112dp"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:fontFamily="monospace"
+                    android:text="LAST UPDATE"
+                    android:textColor="#B7FF00"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/updated"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="9dp"
+                    android:fontFamily="monospace"
+                    android:gravity="center"
+                    android:text="16:11:12"
+                    android:textColor="#B7FF00"
+                    android:textSize="16sp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+
+        <!-- ================================================= -->
+        <!-- STATUS + QUALITY -->
+        <!-- ================================================= -->
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="25dp"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/statusDot"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:background="#FFD04A"
+                    android:gravity="center"
+                    android:text="●"
+                    android:textColor="#FFF4C2"
+                    android:textSize="35sp" />
+
+                <TextView
+                    android:id="@+id/status"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:text="BUY SETUP FORMING"
+                    android:textColor="#B27A00"
+                    android:textSize="25sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="کیفیت Setup 📊"
+                    android:textColor="#666666"
+                    android:textSize="16sp" />
+
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="15dp"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/buyQuality"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="BUY QUALITY: 35 / 100"
+                        android:textColor="#666666"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        android:id="@+id/sellQuality"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:text="SELL QUALITY: 0 / 100"
+                        android:textColor="#666666"
+                        android:textSize="18sp" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="end"
+                    android:lineSpacingExtra="4dp"
+                    android:text="⚠️ این عدد احتمال موفقیت نیست؛&#10;فقط کیفیت شرایط فعلی Setup است."
+                    android:textColor="#666666"
+                    android:textSize="15sp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="20dp"
+            android:background="#BBBBBB" />
+
+        <!-- ================================================= -->
+        <!-- ACTIONABLE TRADE PLAN -->
+        <!-- ================================================= -->
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="#FFFFFF"
+            android:elevation="3dp"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <TextView
+                android:id="@+id/tradePlan"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:lineSpacingExtra="5dp"
+                android:text="⚪ NO ACTIONABLE TRADE"
+                android:textColor="#5C5C5C"
+                android:textSize="19sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tradePlanNote"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:lineSpacingExtra="5dp"
+                android:text="منتظر Setup معتبر و تکمیل زنجیره ورود باشید."
+                android:textColor="#666666"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+
+        <!-- ================================================= -->
+        <!-- TWO COLUMN MAIN AREA -->
+        <!-- ================================================= -->
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:orientation="horizontal">
+
+
+            <!-- ================= LEFT ================= -->
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:paddingEnd="12dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="📈 بازار Context"
+                    android:textColor="#5C5C5C"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/h1Trend"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="H1: BEARISH  🔴"
+                    android:textColor="#666666"
+                    android:textSize="17sp" />
+
+                <TextView
+                    android:id="@+id/m15Trend"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="M15: BULLISH  🟢"
+                    android:textColor="#666666"
+                    android:textSize="17sp" />
+
+                <TextView
+                    android:id="@+id/m5Trend"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="M5: BULLISH  🟢"
+                    android:textColor="#666666"
+                    android:textSize="17sp" />
+
+                <TextView
+                    android:id="@+id/m15Structure"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:text="🟡 ساختار M15: NEUTRAL"
+                    android:textColor="#666666"
+                    android:textSize="17sp" />
+
+                <TextView
+                    android:id="@+id/atrValues"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:lineSpacingExtra="4dp"
+                    android:text="ATR M5: 5.73&#10;ATR M15: 12.92"
+                    android:textColor="#666666"
+                    android:textSize="16sp" />
+
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="22dp"
+                    android:background="#CCCCCC" />
+
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:text="🏛️ ساختار و شکست M15"
+                    android:textColor="#5C5C5C"
+                    android:textSize="19sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/m15Break"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:lineSpacingExtra="5dp"
+                    android:text="Bullish Structure Break: NO&#10;Bearish Structure Break: NO"
+                    android:textColor="#666666"
+                    android:textSize="16sp" />
+
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:text="↩️ Pullback"
+                    android:textColor="#5C5C5C"
+                    android:textSize="19sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/pullback"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:lineSpacingExtra="5dp"
+                    android:text="BUY Pullback: NO&#10;SELL Pullback: NO"
+                    android:textColor="#666666"
+                    android:textSize="16sp" />
+
+            </LinearLayout>
+
+
+            <!-- ================= DIVIDER ================= -->
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="#D0D0D0" />
+
+
+            <!-- ================= RIGHT ================= -->
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:paddingStart="12dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="💡 وضعیت Setup"
+                    android:textColor="#5C5C5C"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/setupState"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:lineSpacingExtra="6dp"
+                    android:text="🟡 BUY در حال شکل‌گیری است."
+                    android:textColor="#666666"
+                    android:textSize="17sp" />
+
+                <TextView
+                    android:id="@+id/setupReason"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:lineSpacingExtra="6dp"
+                    android:text="⚠️ H1 هنوز Bearish است&#10;&#10;اما این موضوع به‌تنهایی BUY را باطل نمی‌کند."
+                    android:textColor="#666666"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/setupWaiting"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="15dp"
+                    android:lineSpacingExtra="6dp"
+                    android:text="برای BUY منتظر:&#10;• شکست معتبر ساختار M15&#10;• تأیید M5&#10;• Pullback به ناحیه شکست&#10;• تأیید ورود بعد از Pullback"
+                    android:textColor="#666666"
+                    android:textSize="15sp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="22dp"
+            android:background="#BBBBBB" />
+
+
+        <!-- ================================================= -->
+        <!-- M5 TRIGGERS -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="17dp"
+            android:text="🔎 تریگرهای M5"
+            android:textColor="#5C5C5C"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="#FFFFFF"
+            android:elevation="2dp"
+            android:orientation="horizontal"
+            android:padding="8dp">
+
+
+            <!-- Trigger column 1 -->
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:padding="5dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/bullSweep"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Liquidity Sweep صعودی"
+                        android:textColor="#666666"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:layout_width="38dp"
+                        android:layout_height="27dp"
+                        android:background="#EEEEEE"
+                        android:gravity="center"
+                        android:text="NO"
+                        android:textColor="#666666"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="9dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/bearSweep"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Liquidity Sweep نزولی"
+                        android:textColor="#666666"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:layout_width="38dp"
+                        android:layout_height="27dp"
+                        android:background="#EEEEEE"
+                        android:gravity="center"
+                        android:text="NO"
+                        android:textColor="#666666"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+
+            <!-- Trigger column 2 -->
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="#EEEEEE" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:padding="5dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/bullEngulf"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Bullish Engulfing"
+                        android:textColor="#666666"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:layout_width="38dp"
+                        android:layout_height="27dp"
+                        android:background="#EEEEEE"
+                        android:gravity="center"
+                        android:text="NO"
+                        android:textColor="#666666"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="9dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/bearEngulf"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Bearish Engulfing"
+                        android:textColor="#666666"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:layout_width="38dp"
+                        android:layout_height="27dp"
+                        android:background="#EEEEEE"
+                        android:gravity="center"
+                        android:text="NO"
+                        android:textColor="#666666"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+
+            <!-- Trigger column 3 -->
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="#EEEEEE" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:padding="5dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/bullBreak"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Breakout صعودی M5"
+                        android:textColor="#666666"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:layout_width="38dp"
+                        android:layout_height="27dp"
+                        android:background="#EEEEEE"
+                        android:gravity="center"
+                        android:text="NO"
+                        android:textColor="#666666"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="9dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/bearBreak"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Breakout نزولی M5"
+                        android:textColor="#666666"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:layout_width="38dp"
+                        android:layout_height="27dp"
+                        android:background="#EEEEEE"
+                        android:gravity="center"
+                        android:text="NO"
+                        android:textColor="#666666"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+
+        <!-- ================================================= -->
+        <!-- ORIGINAL ANALYSIS HOLDER -->
+        <!-- Kept invisible for compatibility with current Java -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:id="@+id/analysis"
+            android:layout_width="1dp"
+            android:layout_height="1dp"
+            android:visibility="gone"
+            android:text="" />
+
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="20dp"
+            android:background="#CCCCCC" />
+
+
+        <!-- ================================================= -->
+        <!-- FOOTER -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:gravity="center"
+            android:lineSpacingExtra="5dp"
+            android:text="✓ فقط کندل‌های بسته‌شده تحلیل شده‌اند.&#10;✓ کندل در حال تشکیل حذف شده است."
+            android:textColor="#666666"
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="#FFFFFF"
+            android:elevation="1dp"
+            android:gravity="center"
+            android:padding="10dp"
+            android:text="✓ Entry فقط بعد از شکست + تأیید + Pullback ✓"
+            android:textColor="#666666"
+            android:textSize="14sp" />
+
+
+        <!-- دکمه بروزرسانی به هدر منتقل شد -->
+
+    </LinearLayout>
+            </ScrollView>
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/chartPage" android:layout_width="match_parent" android:layout_height="match_parent"
+            android:visibility="gone" android:background="#101214">
+            <com.xau.analyzer.XauChartView
+                android:id="@+id/xauChart" android:layout_width="match_parent" android:layout_height="match_parent"/>
+        </FrameLayout>
+    </FrameLayout>
+</LinearLayout>
