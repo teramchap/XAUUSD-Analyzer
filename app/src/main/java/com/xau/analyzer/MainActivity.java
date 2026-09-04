@@ -27,7 +27,7 @@ import okhttp3.Response;
 
 public class MainActivity extends Activity {
 
-    private static final String APP_VERSION = "V15";
+    private static final String APP_VERSION = "V18";
 
     // =========================================================
     // CONSTANTS
@@ -88,6 +88,12 @@ public class MainActivity extends Activity {
     private TextView analysis;
     private Button refresh;
 
+    private View analysisPage, chartPage, tabAnalysis, tabChart;
+    private XauChartView xauChart;
+    private double chartEntry=0, chartSl=0, chartTp1=0, chartTp2=0, chartTp3=0;
+    private boolean chartReady=false;
+    private String chartStage="در انتظار تحلیل...";
+
     // =========================================================
     // NETWORK
     // =========================================================
@@ -125,6 +131,11 @@ public class MainActivity extends Activity {
     // =========================================================
     // CANDLE
     // =========================================================
+
+    public static class CandleProxy {
+        public long openTime; public double open, high, low, close;
+        public CandleProxy(long t,double o,double h,double l,double c){openTime=t;open=o;high=h;low=l;close=c;}
+    }
 
     private static class Candle {
 
@@ -193,12 +204,31 @@ public class MainActivity extends Activity {
 
         analysis = findViewById(R.id.analysis);
         refresh = findViewById(R.id.refresh);
+        analysisPage = findViewById(R.id.analysisPage);
+        chartPage = findViewById(R.id.chartPage);
+        tabAnalysis = findViewById(R.id.tabAnalysis);
+        tabChart = findViewById(R.id.tabChart);
+        xauChart = findViewById(R.id.xauChart);
+
+        tabAnalysis.setOnClickListener(v -> showTab(true));
+        tabChart.setOnClickListener(v -> showTab(false));
+        showTab(true);
 
         refresh.setOnClickListener(v -> loadAll());
 
         loadAll();
 
         handler.postDelayed(autoRefresh, 15000);
+    }
+
+    private void showTab(boolean analysisSelected) {
+        analysisPage.setVisibility(analysisSelected ? View.VISIBLE : View.GONE);
+        chartPage.setVisibility(analysisSelected ? View.GONE : View.VISIBLE);
+        tabAnalysis.setBackgroundColor(analysisSelected ? Color.rgb(80,80,80) : Color.rgb(238,238,238));
+        tabAnalysis.setTextColor(analysisSelected ? Color.WHITE : Color.rgb(85,85,85));
+        tabChart.setBackgroundColor(analysisSelected ? Color.rgb(238,238,238) : Color.rgb(80,80,80));
+        tabChart.setTextColor(analysisSelected ? Color.rgb(85,85,85) : Color.WHITE);
+        if (!analysisSelected && xauChart != null) xauChart.invalidate();
     }
 
     @Override
@@ -823,6 +853,7 @@ public class MainActivity extends Activity {
         // =====================================================
         // 11) FINAL DECISION
         // =====================================================
+        chartReady = false; chartEntry=chartSl=chartTp1=chartTp2=chartTp3=0;
         if (buyReady) {
             showBuyReady(buyScore, atrM5, pullbackTime);
         } else if (sellReady) {
@@ -840,8 +871,7 @@ public class MainActivity extends Activity {
                     activeBreakLevel,
                     confirmationTime,
                     pullbackTime,
-                    buyEntryConfirmed,
-                    atrM5
+                    buyEntryConfirmed
             );
         } else if (sellForming && !buyForming) {
             showSellForming(
@@ -856,8 +886,7 @@ public class MainActivity extends Activity {
                     activeBreakLevel,
                     confirmationTime,
                     pullbackTime,
-                    sellEntryConfirmed,
-                    atrM5
+                    sellEntryConfirmed
             );
         } else if (buyForming && sellForming) {
             showMixedMarket(buyScore, sellScore);
@@ -866,8 +895,7 @@ public class MainActivity extends Activity {
                     activeBreakLevel,
                     confirmationTime,
                     pullbackTime,
-                    false,
-                    atrM5
+                    false
             );
         } else {
             showNoSetup();
@@ -876,13 +904,41 @@ public class MainActivity extends Activity {
                     0,
                     0,
                     0,
-                    false,
-                    atrM5
+                    false
             );
         }
 
         analysis.setText("");
+
+        updateChart(directionForChart(buyReady, sellReady, activeBreakDirection), activeBreakLevel,
+                confirmationTime, pullbackTime, buyEntryConfirmed || sellEntryConfirmed, buyReady || sellReady,
+                atrM5);
     }
+
+    private int directionForChart(boolean buyReady, boolean sellReady, int active) {
+        if (buyReady) return DIR_BUY;
+        if (sellReady) return DIR_SELL;
+        return active;
+    }
+
+    private void updateChart(int dir, double breakLevel, long confirmationTime, long pullbackTime,
+                             boolean entryConfirmed, boolean ready, double atrM5) {
+        if (xauChart == null || m5.isEmpty()) return;
+        double ztol = Math.max(atrM5 * 0.25, 0.30);
+        double zl = breakLevel > 0 ? breakLevel - ztol : 0;
+        double zh = breakLevel > 0 ? breakLevel + ztol : 0;
+        String stage;
+        if (dir == DIR_NONE) stage = "NO ACTIONABLE TRADE";
+        else if (ready) stage = dir == DIR_BUY ? "BUY READY" : "SELL READY";
+        else if (confirmationTime <= 0) stage = dir == DIR_BUY ? "BUY · WAIT CONFIRMATION" : "SELL · WAIT CONFIRMATION";
+        else if (pullbackTime <= 0) stage = dir == DIR_BUY ? "BUY · WAIT PULLBACK" : "SELL · WAIT PULLBACK";
+        else if (!entryConfirmed) stage = dir == DIR_BUY ? "BUY · WAIT ENTRY" : "SELL · WAIT ENTRY";
+        else stage = dir == DIR_BUY ? "BUY · ENTRY CONFIRMED" : "SELL · ENTRY CONFIRMED";
+        ArrayList<CandleProxy> list = new ArrayList<>();
+        for (Candle q : m5) list.add(new CandleProxy(q.openTime,q.open,q.high,q.low,q.close));
+        xauChart.setData(list, livePrice, dir, breakLevel, zl, zh, chartReady, chartEntry, chartSl, chartTp1, chartTp2, chartTp3, stage);
+    }
+
 
     // =========================================================
     // BUY FORMING
@@ -1113,6 +1169,8 @@ public class MainActivity extends Activity {
         double tp2 = entry + risk * 2.0;
         double tp3 = entry + risk * 3.0;
 
+        chartReady = true; chartEntry=entry; chartSl=sl; chartTp1=tp1; chartTp2=tp2; chartTp3=tp3;
+
         setupReason.setText(
                 "M15 Breakout ✓\n" +
                 "M5 Confirmation ✓\n" +
@@ -1179,6 +1237,8 @@ public class MainActivity extends Activity {
         double tp1 = entry - risk;
         double tp2 = entry - risk * 2.0;
         double tp3 = entry - risk * 3.0;
+
+        chartReady = true; chartEntry=entry; chartSl=sl; chartTp1=tp1; chartTp2=tp2; chartTp3=tp3;
 
         setupReason.setText(
                 "M15 Breakout ✓\n" +
@@ -1254,8 +1314,7 @@ public class MainActivity extends Activity {
             double breakLevel,
             long confirmationTime,
             long pullbackTime,
-            boolean entryConfirmed,
-            double atrM5) {
+            boolean entryConfirmed) {
 
         if (tradePlan == null || tradePlanNote == null) return;
 
@@ -1265,9 +1324,25 @@ public class MainActivity extends Activity {
         String title;
 
         if (direction == DIR_BUY) {
-            title = "🟡 BUY — WAIT FOR ENTRY";
+            if (confirmationTime <= 0) {
+                title = "🟠 BUY — WAIT FOR CONFIRMATION";
+            } else if (pullbackTime <= 0) {
+                title = "🟠 BUY — WAIT FOR PULLBACK";
+            } else if (!entryConfirmed) {
+                title = "🟡 BUY — PULLBACK IN ZONE / WAIT FOR ENTRY";
+            } else {
+                title = "🔵 BUY — ENTRY CONFIRMED";
+            }
         } else if (direction == DIR_SELL) {
-            title = "🟡 SELL — WAIT FOR ENTRY";
+            if (confirmationTime <= 0) {
+                title = "🟠 SELL — WAIT FOR CONFIRMATION";
+            } else if (pullbackTime <= 0) {
+                title = "🟠 SELL — WAIT FOR PULLBACK";
+            } else if (!entryConfirmed) {
+                title = "🟡 SELL — PULLBACK IN ZONE / WAIT FOR ENTRY";
+            } else {
+                title = "🔵 SELL — ENTRY CONFIRMED";
+            }
         } else {
             title = "⚪ NO ACTIONABLE TRADE";
         }
@@ -1319,19 +1394,19 @@ public class MainActivity extends Activity {
             );
         } else if (entryConfirmed) {
             tradePlanNote.setText(
-                    "شرایط تقریباً کامل است؛ اگر BUY/SELL READY نشد، کیفیت یا Context را بررسی کنید."
+                    "Entry Confirmation تشکیل شده؛ اگر شرایط READY نشد، کیفیت یا Context هنوز حداقل لازم را ندارد."
             );
         } else if (pullbackTime > 0) {
             tradePlanNote.setText(
-                    "Pullback تشکیل شده؛ حالا منتظر تأیید نهایی Entry هستیم. SL و TP فقط بعد از تأیید ورود محاسبه می‌شوند."
+                    "قیمت به ناحیه Pullback رسیده؛ فعلاً ورود ممنوع است. منتظر تأیید نهایی M5 برای Entry هستیم."
             );
         } else if (confirmationTime > 0) {
             tradePlanNote.setText(
-                    "Confirmation انجام شده؛ قیمت باید به محدوده Pullback برگردد. ورود در این مرحله ممنوع است."
+                    "Breakout و Confirmation انجام شده؛ حالا فقط منتظر برگشت قیمت به ناحیه Pullback هستیم. ورود فعلاً ممنوع است."
             );
         } else {
             tradePlanNote.setText(
-                    "هنوز Entry نداریم. منتظر Confirmation معتبر M5 بعد از Breakout هستیم."
+                    "Breakout فعال است؛ هنوز Confirmation معتبر M5 نداریم. فعلاً هیچ ورودی مجاز نیست."
             );
         }
     }
