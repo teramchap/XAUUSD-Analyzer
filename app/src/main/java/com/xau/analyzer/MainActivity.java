@@ -88,11 +88,13 @@ public class MainActivity extends Activity {
     private TextView analysis;
     private Button refresh;
 
-    private View analysisPage, chartPage, tabAnalysis, tabChart;
+    private View analysisPage, chartPage;
+    private TextView tabAnalysis, tabChart;
     private XauChartView xauChart;
     private double chartEntry=0, chartSl=0, chartTp1=0, chartTp2=0, chartTp3=0;
     private boolean chartReady=false;
     private String chartStage="در انتظار تحلیل...";
+    private double lastAtrM5 = 0;
 
     // =========================================================
     // NETWORK
@@ -661,6 +663,7 @@ public class MainActivity extends Activity {
         boolean structureBear = structure == DIR_SELL;
 
         double atrM5 = atr(m5, 14);
+        lastAtrM5 = atrM5;
         double atrM15 = atr(m15, 14);
 
         // =====================================================
@@ -1355,7 +1358,7 @@ public class MainActivity extends Activity {
 
             // The pullback zone is intentionally provisional: it is a watch
             // area around the broken level, not an entry signal.
-            double zoneTolerance = Math.max(atrM5 * 0.25, 0.30);
+            double zoneTolerance = Math.max(lastAtrM5 * 0.25, 0.30);
             double zoneLow = breakLevel - zoneTolerance;
             double zoneHigh = breakLevel + zoneTolerance;
 
