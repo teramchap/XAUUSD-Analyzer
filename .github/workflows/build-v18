@@ -1,0 +1,57 @@
+name: XAUUSD Analyzer V18
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify source XML
+        shell: bash
+        run: |
+          set -e
+          FILE="app/src/main/res/layout/activity_main.xml"
+          echo "COMMIT=$(git rev-parse HEAD)"
+          echo "FILE=$FILE"
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          p=Path('app/src/main/res/layout/activity_main.xml')
+          b=p.read_bytes()
+          print('BYTES=',repr(b[:40]))
+          if b.startswith(b'<!DOCTYPE html') or b.startswith(b'This XML file'):
+              raise SystemExit('ERROR: activity_main.xml is an HTML/XML browser page, not the raw XML source file.')
+          ET.parse(p)
+          print('XML OK')
+          PY
+          head -n 1 "$FILE"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Build APK
+        run: gradle assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: XAUUSD-Analyzer-v18
+          path: app/build/outputs/apk/debug/app-debug.apk
